@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron'
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import { fileURLToPath } from 'node:url'
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -177,6 +178,14 @@ app.whenReady().then(() => {
   createWindow();
 
   const expressApp = express();
+
+  // CORS configuration
+  const corsOptions = {
+    origin: '*', // Allow only the remote UI's origin
+    optionsSuccessStatus: 200 // For legacy browser support
+  };
+  expressApp.use(cors(corsOptions));
+
   expressApp.use(express.json()); // Middleware to parse JSON bodies
   const port = 3001;
 

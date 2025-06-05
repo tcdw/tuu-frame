@@ -1711,7 +1711,7 @@ function requireBytes() {
   }
   return bytes.exports;
 }
-var lib$1 = { exports: {} };
+var lib$2 = { exports: {} };
 var safer_1;
 var hasRequiredSafer;
 function requireSafer() {
@@ -12248,7 +12248,7 @@ function requireStreams() {
 }
 var hasRequiredLib;
 function requireLib() {
-  if (hasRequiredLib) return lib$1.exports;
+  if (hasRequiredLib) return lib$2.exports;
   hasRequiredLib = 1;
   (function(module) {
     var Buffer2 = requireSafer().Buffer;
@@ -12360,8 +12360,8 @@ function requireLib() {
         throw new Error("iconv-lite Streaming API is not enabled. Use iconv.enableStreamingAPI(require('stream')); to enable it.");
       };
     }
-  })(lib$1);
-  return lib$1.exports;
+  })(lib$2);
+  return lib$2.exports;
 }
 /*!
  * unpipe
@@ -27202,7 +27202,7 @@ var parse$8 = function(str, opts) {
 var stringify$2 = stringify_1;
 var parse$7 = parse$8;
 var formats = formats$3;
-var lib = {
+var lib$1 = {
   formats,
   parse: parse$7,
   stringify: stringify$2
@@ -27223,7 +27223,7 @@ function requireUrlencoded() {
   var isFinished2 = onFinishedExports.isFinished;
   var read = requireRead();
   var typeis2 = typeIsExports;
-  var qs = lib;
+  var qs = lib$1;
   var { getCharset, normalizeOptions } = requireUtils();
   urlencoded_1 = urlencoded;
   function urlencoded(options) {
@@ -28605,7 +28605,7 @@ var proxyAddrExports = proxyAddr.exports;
   var etag2 = etag_1;
   var mime2 = mimeTypes;
   var proxyaddr2 = proxyAddrExports;
-  var qs = lib;
+  var qs = lib$1;
   var querystring = require$$6$1;
   exports.methods = METHODS2.map((method) => method.toLowerCase());
   exports.etag = createETagGenerator({ weak: false });
@@ -32530,6 +32530,278 @@ var expressExports = express$2.exports;
  */
 var express = expressExports;
 const express$1 = /* @__PURE__ */ getDefaultExportFromCjs(express);
+var lib = { exports: {} };
+/*
+object-assign
+(c) Sindre Sorhus
+@license MIT
+*/
+var getOwnPropertySymbols = Object.getOwnPropertySymbols;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var propIsEnumerable = Object.prototype.propertyIsEnumerable;
+function toObject(val) {
+  if (val === null || val === void 0) {
+    throw new TypeError("Object.assign cannot be called with null or undefined");
+  }
+  return Object(val);
+}
+function shouldUseNative() {
+  try {
+    if (!Object.assign) {
+      return false;
+    }
+    var test1 = new String("abc");
+    test1[5] = "de";
+    if (Object.getOwnPropertyNames(test1)[0] === "5") {
+      return false;
+    }
+    var test2 = {};
+    for (var i = 0; i < 10; i++) {
+      test2["_" + String.fromCharCode(i)] = i;
+    }
+    var order2 = Object.getOwnPropertyNames(test2).map(function(n) {
+      return test2[n];
+    });
+    if (order2.join("") !== "0123456789") {
+      return false;
+    }
+    var test3 = {};
+    "abcdefghijklmnopqrst".split("").forEach(function(letter) {
+      test3[letter] = letter;
+    });
+    if (Object.keys(Object.assign({}, test3)).join("") !== "abcdefghijklmnopqrst") {
+      return false;
+    }
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+var objectAssign = shouldUseNative() ? Object.assign : function(target, source) {
+  var from;
+  var to = toObject(target);
+  var symbols;
+  for (var s2 = 1; s2 < arguments.length; s2++) {
+    from = Object(arguments[s2]);
+    for (var key in from) {
+      if (hasOwnProperty.call(from, key)) {
+        to[key] = from[key];
+      }
+    }
+    if (getOwnPropertySymbols) {
+      symbols = getOwnPropertySymbols(from);
+      for (var i = 0; i < symbols.length; i++) {
+        if (propIsEnumerable.call(from, symbols[i])) {
+          to[symbols[i]] = from[symbols[i]];
+        }
+      }
+    }
+  }
+  return to;
+};
+(function() {
+  var assign2 = objectAssign;
+  var vary2 = varyExports;
+  var defaults2 = {
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  };
+  function isString2(s2) {
+    return typeof s2 === "string" || s2 instanceof String;
+  }
+  function isOriginAllowed(origin, allowedOrigin) {
+    if (Array.isArray(allowedOrigin)) {
+      for (var i = 0; i < allowedOrigin.length; ++i) {
+        if (isOriginAllowed(origin, allowedOrigin[i])) {
+          return true;
+        }
+      }
+      return false;
+    } else if (isString2(allowedOrigin)) {
+      return origin === allowedOrigin;
+    } else if (allowedOrigin instanceof RegExp) {
+      return allowedOrigin.test(origin);
+    } else {
+      return !!allowedOrigin;
+    }
+  }
+  function configureOrigin(options, req2) {
+    var requestOrigin = req2.headers.origin, headers = [], isAllowed;
+    if (!options.origin || options.origin === "*") {
+      headers.push([{
+        key: "Access-Control-Allow-Origin",
+        value: "*"
+      }]);
+    } else if (isString2(options.origin)) {
+      headers.push([{
+        key: "Access-Control-Allow-Origin",
+        value: options.origin
+      }]);
+      headers.push([{
+        key: "Vary",
+        value: "Origin"
+      }]);
+    } else {
+      isAllowed = isOriginAllowed(requestOrigin, options.origin);
+      headers.push([{
+        key: "Access-Control-Allow-Origin",
+        value: isAllowed ? requestOrigin : false
+      }]);
+      headers.push([{
+        key: "Vary",
+        value: "Origin"
+      }]);
+    }
+    return headers;
+  }
+  function configureMethods(options) {
+    var methods2 = options.methods;
+    if (methods2.join) {
+      methods2 = options.methods.join(",");
+    }
+    return {
+      key: "Access-Control-Allow-Methods",
+      value: methods2
+    };
+  }
+  function configureCredentials(options) {
+    if (options.credentials === true) {
+      return {
+        key: "Access-Control-Allow-Credentials",
+        value: "true"
+      };
+    }
+    return null;
+  }
+  function configureAllowedHeaders(options, req2) {
+    var allowedHeaders = options.allowedHeaders || options.headers;
+    var headers = [];
+    if (!allowedHeaders) {
+      allowedHeaders = req2.headers["access-control-request-headers"];
+      headers.push([{
+        key: "Vary",
+        value: "Access-Control-Request-Headers"
+      }]);
+    } else if (allowedHeaders.join) {
+      allowedHeaders = allowedHeaders.join(",");
+    }
+    if (allowedHeaders && allowedHeaders.length) {
+      headers.push([{
+        key: "Access-Control-Allow-Headers",
+        value: allowedHeaders
+      }]);
+    }
+    return headers;
+  }
+  function configureExposedHeaders(options) {
+    var headers = options.exposedHeaders;
+    if (!headers) {
+      return null;
+    } else if (headers.join) {
+      headers = headers.join(",");
+    }
+    if (headers && headers.length) {
+      return {
+        key: "Access-Control-Expose-Headers",
+        value: headers
+      };
+    }
+    return null;
+  }
+  function configureMaxAge(options) {
+    var maxAge = (typeof options.maxAge === "number" || options.maxAge) && options.maxAge.toString();
+    if (maxAge && maxAge.length) {
+      return {
+        key: "Access-Control-Max-Age",
+        value: maxAge
+      };
+    }
+    return null;
+  }
+  function applyHeaders(headers, res2) {
+    for (var i = 0, n = headers.length; i < n; i++) {
+      var header3 = headers[i];
+      if (header3) {
+        if (Array.isArray(header3)) {
+          applyHeaders(header3, res2);
+        } else if (header3.key === "Vary" && header3.value) {
+          vary2(res2, header3.value);
+        } else if (header3.value) {
+          res2.setHeader(header3.key, header3.value);
+        }
+      }
+    }
+  }
+  function cors2(options, req2, res2, next) {
+    var headers = [], method = req2.method && req2.method.toUpperCase && req2.method.toUpperCase();
+    if (method === "OPTIONS") {
+      headers.push(configureOrigin(options, req2));
+      headers.push(configureCredentials(options));
+      headers.push(configureMethods(options));
+      headers.push(configureAllowedHeaders(options, req2));
+      headers.push(configureMaxAge(options));
+      headers.push(configureExposedHeaders(options));
+      applyHeaders(headers, res2);
+      if (options.preflightContinue) {
+        next();
+      } else {
+        res2.statusCode = options.optionsSuccessStatus;
+        res2.setHeader("Content-Length", "0");
+        res2.end();
+      }
+    } else {
+      headers.push(configureOrigin(options, req2));
+      headers.push(configureCredentials(options));
+      headers.push(configureExposedHeaders(options));
+      applyHeaders(headers, res2);
+      next();
+    }
+  }
+  function middlewareWrapper(o) {
+    var optionsCallback = null;
+    if (typeof o === "function") {
+      optionsCallback = o;
+    } else {
+      optionsCallback = function(req2, cb) {
+        cb(null, o);
+      };
+    }
+    return function corsMiddleware(req2, res2, next) {
+      optionsCallback(req2, function(err, options) {
+        if (err) {
+          next(err);
+        } else {
+          var corsOptions = assign2({}, defaults2, options);
+          var originCallback = null;
+          if (corsOptions.origin && typeof corsOptions.origin === "function") {
+            originCallback = corsOptions.origin;
+          } else if (corsOptions.origin) {
+            originCallback = function(origin, cb) {
+              cb(null, corsOptions.origin);
+            };
+          }
+          if (originCallback) {
+            originCallback(req2.headers.origin, function(err2, origin) {
+              if (err2 || !origin) {
+                next(err2);
+              } else {
+                corsOptions.origin = origin;
+                cors2(corsOptions, req2, res2, next);
+              }
+            });
+          } else {
+            next();
+          }
+        }
+      });
+    };
+  }
+  lib.exports = middlewareWrapper;
+})();
+var libExports = lib.exports;
+const cors = /* @__PURE__ */ getDefaultExportFromCjs(libExports);
 const __dirname = path$3.dirname(fileURLToPath(import.meta.url));
 const PRESETS_FILE_PATH = path$3.join(app.getPath("userData"), "mv-player-presets.json");
 async function loadPresets() {
@@ -32659,6 +32931,13 @@ app.whenReady().then(() => {
   });
   createWindow();
   const expressApp = express$1();
+  const corsOptions = {
+    origin: "*",
+    // Allow only the remote UI's origin
+    optionsSuccessStatus: 200
+    // For legacy browser support
+  };
+  expressApp.use(cors(corsOptions));
   expressApp.use(express$1.json());
   const port = 3001;
   expressApp.get("/api/ping", (_req, res2) => {

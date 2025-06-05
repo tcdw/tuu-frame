@@ -43,11 +43,27 @@ function App() {
     }
     try {
       setError(null);
-      const result = await addPreset(newPresetPath); // API returns { message, presets: string[] }
-      const uiPresets = result.presets.map(path => ({ path, name: pathToName(path) }));
+      const result = await addPreset(newPresetPath);
+      let presetsToSet: string[] = [];
+
+      if (Array.isArray(result)) { // Case: API directly returns the array of preset strings
+        presetsToSet = result;
+        console.log('handleAddPreset: API returned an array directly.');
+      } else if (result && Array.isArray(result.presets)) { // Case: API returns an object { message, presets }
+        presetsToSet = result.presets;
+        if (result.message) {
+          console.log('Server message:', result.message); // Optional: handle success message
+        }
+      } else {
+        console.warn('handleAddPreset: API response did not contain a valid presets array.', result);
+        setError('Preset action completed, but failed to update list from response. Please refresh or check console.');
+        setNewPresetPath('');
+        return; // Exit if no valid presets found to map
+      }
+
+      const uiPresets = presetsToSet.map(path => ({ path, name: pathToName(path) }));
       setPresets(uiPresets);
       setNewPresetPath('');
-      // Optionally show result.message as a success notification
     } catch (err) {
       console.error('Failed to add preset:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred while adding preset.');

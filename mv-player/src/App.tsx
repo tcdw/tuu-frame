@@ -4,19 +4,13 @@ import './App.css';
 
 function App() {
   const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
+  const [playlist, setPlaylist] = useState<string[]>([]);
+  const [currentVideoPath, setCurrentVideoPath] = useState<string | undefined>(undefined);
 
   const handleOpenFile = async () => {
     const filePath = await window.electronAPI.openFile();
+    console.log('Selected file:', filePath);
     if (filePath) {
-      // Ensure the path is a URL format. For local files, it might need 'file://' prefix.
-      // However, react-player often handles raw paths correctly on Electron.
-      // Let's test without 'file://' first, and add if needed.
-      // Forcing 'file://' can sometimes cause issues with spaces or special characters if not encoded properly.
-      // A common practice is to let Electron/browser resolve it, but if issues arise, use:
-      // setVideoUrl(`file://${filePath.replace(/\\/g, '/')}`); // Basic replacement for Windows paths
-      // For local files, ReactPlayer needs a URL. On macOS/Linux, this is file:///path/to/file
-      // On Windows, it would be file:///C:/path/to/file after converting backslashes.
-      // Since the user is on macOS, we just need to prepend file://
       setVideoUrl(`mv-stream://${filePath}`);
     } else {
       setVideoUrl(undefined);
@@ -24,16 +18,63 @@ function App() {
     }
   };
 
+  const handleOpenDirectory = async () => {
+    const videoFiles = await window.electronAPI.openDirectory();
+    console.log('Found video files:', videoFiles);
+    if (videoFiles && videoFiles.length > 0) {
+      setPlaylist(videoFiles);
+      playRandomVideo(videoFiles, undefined); // Play a random video, ensuring it's not 'undefined'
+    } else if (videoFiles) { // videoFiles is an empty array
+      alert('No video files found in the selected directory.');
+      setPlaylist([]);
+      setVideoUrl(undefined);
+      setCurrentVideoPath(undefined);
+    } else { // videoFiles is undefined (e.g., dialog cancelled)
+      console.log('No directory selected or an error occurred.');
+      // Potentially clear playlist and videoUrl if desired
+      // setPlaylist([]);
+      // setVideoUrl(undefined);
+      // setCurrentVideoPath(undefined);
+    }
+  };
+
+  const playRandomVideo = (currentPlaylist: string[], currentPath?: string) => {
+    if (!currentPlaylist || currentPlaylist.length === 0) {
+      setVideoUrl(undefined);
+      setCurrentVideoPath(undefined);
+      return;
+    }
+
+    let randomIndex = Math.floor(Math.random() * currentPlaylist.length);
+    let nextVideoPath = currentPlaylist[randomIndex];
+
+    // If playlist has more than one video and the randomly selected one is the same as current, try once more
+    if (currentPlaylist.length > 1 && nextVideoPath === currentPath) {
+      randomIndex = Math.floor(Math.random() * currentPlaylist.length);
+      nextVideoPath = currentPlaylist[randomIndex];
+    }
+    
+    setCurrentVideoPath(nextVideoPath);
+    setVideoUrl(`mv-stream://${nextVideoPath}`);
+  };
+
+  const handleVideoEnded = () => {
+    console.log('Video ended, playing next random video from playlist.');
+    playRandomVideo(playlist, currentVideoPath);
+  };
+
   return (
     <div className="App">
       <button onClick={handleOpenFile} className='test-btn'>Open Video File</button>
+      <button onClick={handleOpenDirectory} className='test-btn' style={{ top: '5rem' }}>Open Directory</button>
       {videoUrl ? (
         <ReactPlayer
           url={videoUrl}
           playing
           controls
           width='100%'
-          height='100%' // Adjusted height to make space for the button
+          height='100%'
+          onEnded={handleVideoEnded} // Play next random video when current one ends
         />
       ) : (
         <p>No video selected. Click "Open Video File" to choose a video.</p>

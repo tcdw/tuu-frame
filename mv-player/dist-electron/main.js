@@ -17,6 +17,7 @@ import require$$6$1 from "querystring";
 import require$$1$5 from "node:net";
 import require$$13 from "stream";
 import { fileURLToPath } from "node:url";
+import fs$2 from "node:fs/promises";
 var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
 function getDefaultExportFromCjs(x) {
   return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
@@ -32540,8 +32541,8 @@ function createWindow() {
   win = new BrowserWindow({
     icon: path$3.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
-      preload: path$3.join(__dirname, "preload.mjs"),
-      webSecurity: false
+      preload: path$3.join(__dirname, "preload.mjs")
+      // webSecurity: false
     }
   });
   win.webContents.on("did-finish-load", () => {
@@ -32573,6 +32574,28 @@ app.whenReady().then(() => {
     } catch (error2) {
       console.error("Failed to decode URL for mv-stream protocol:", error2);
       return callback({ error: -1 });
+    }
+  });
+  ipcMain.handle("dialog:openDirectory", async () => {
+    if (!win) {
+      console.error("Main window is not available.");
+      return;
+    }
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      properties: ["openDirectory"]
+    });
+    if (canceled || filePaths.length === 0) {
+      return [];
+    }
+    const directoryPath = filePaths[0];
+    try {
+      const dirents = await fs$2.readdir(directoryPath, { withFileTypes: true });
+      const videoExtensions = [".mp4", ".mkv", ".webm"];
+      const videoFiles = dirents.filter((dirent) => dirent.isFile() && videoExtensions.includes(path$3.extname(dirent.name).toLowerCase())).map((dirent) => path$3.join(directoryPath, dirent.name));
+      return videoFiles;
+    } catch (error2) {
+      console.error("Error scanning directory:", error2);
+      return [];
     }
   });
   ipcMain.handle("dialog:openFile", async () => {

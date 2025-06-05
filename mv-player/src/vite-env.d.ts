@@ -2,6 +2,7 @@
 
 interface ElectronAPI {
   openFile: () => Promise<string | undefined>;
+  openDirectory: () => Promise<string[] | undefined>;
 }
 
 declare global {

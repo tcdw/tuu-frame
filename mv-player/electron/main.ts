@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron'
 import express from 'express';
 import { fileURLToPath } from 'node:url'
-import path from 'node:path'
+import path from 'node:path';
+import fs from 'node:fs/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -30,7 +31,7 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
-      webSecurity: false
+      // webSecurity: false
     },
   })
 
@@ -77,6 +78,32 @@ app.whenReady().then(() => {
       console.error('Failed to decode URL for mv-stream protocol:', error);
       // It's important to call the callback, even with an error or a non-existent path
       return callback({ error: -1 }); // Or some other error code
+    }
+  });
+
+  // IPC handler for opening directory dialog
+  ipcMain.handle('dialog:openDirectory', async () => {
+    if (!win) {
+      console.error('Main window is not available.');
+      return;
+    }
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory']
+    });
+    if (canceled || filePaths.length === 0) {
+      return []; // Return empty array if no directory selected or dialog cancelled
+    }
+    const directoryPath = filePaths[0];
+    try {
+      const dirents = await fs.readdir(directoryPath, { withFileTypes: true });
+      const videoExtensions = ['.mp4', '.mkv', '.webm'];
+      const videoFiles = dirents
+        .filter(dirent => dirent.isFile() && videoExtensions.includes(path.extname(dirent.name).toLowerCase()))
+        .map(dirent => path.join(directoryPath, dirent.name));
+      return videoFiles;
+    } catch (error) {
+      console.error('Error scanning directory:', error);
+      return []; // Return empty array on error
     }
   });
 

@@ -26,14 +26,14 @@ function App() {
 
   return (
     <div className="App">
-      <button onClick={handleOpenFile}>Open Video File</button>
+      <button onClick={handleOpenFile} className='test-btn'>Open Video File</button>
       {videoUrl ? (
         <ReactPlayer
           url={videoUrl}
           playing
           controls
           width='100%'
-          height='calc(100vh - 80px)' // Adjusted height to make space for the button
+          height='100%' // Adjusted height to make space for the button
         />
       ) : (
         <p>No video selected. Click "Open Video File" to choose a video.</p>

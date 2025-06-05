@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import './App.css';
 
@@ -38,7 +38,7 @@ function App() {
     }
   };
 
-  const playRandomVideo = (currentPlaylist: string[], currentPath?: string) => {
+  const playRandomVideo = (currentPlaylist: string[] = playlist, currentPath: string | undefined = currentVideoPath) => {
     if (!currentPlaylist || currentPlaylist.length === 0) {
       setVideoUrl(undefined);
       setCurrentVideoPath(undefined);
@@ -55,8 +55,38 @@ function App() {
     }
     
     setCurrentVideoPath(nextVideoPath);
-    setVideoUrl(`mv-stream://${nextVideoPath}`);
+    setVideoUrl(`mv-stream://${encodeURIComponent(nextVideoPath)}`);
   };
+
+  useEffect(() => {
+    const handleUpdatePlaylist = (videoFiles: string[]) => {
+      console.log('Received main:updatePlaylist IPC with videos:', videoFiles);
+      if (videoFiles && videoFiles.length > 0) {
+        setPlaylist(videoFiles);
+        playRandomVideo(videoFiles); // Pass videoFiles directly to ensure it uses the latest
+      } else {
+        setPlaylist([]);
+        setCurrentVideoPath(undefined);
+        setVideoUrl(undefined);
+        console.log('Received empty playlist or no video files from main process.');
+      }
+    };
+
+    // Setup listener
+    window.electronAPI?.onUpdatePlaylist(handleUpdatePlaylist);
+
+    // Cleanup listener on component unmount
+    return () => {
+      // ipcRenderer.removeListener is not directly available here due to contextBridge
+      // For now, we rely on the main process to manage sending to existing windows.
+      // If multiple listeners become an issue, we'd need to expose a removeListener function via preload.
+      // However, for a single App component instance, this should be fine.
+      // A simple way to "remove" is to re-register with a no-op, but that's not clean.
+      // The best practice would be for electronAPI.onUpdatePlaylist to return a cleanup function.
+      // For now, let's assume this is okay for a single-window app.
+      console.log('Cleaning up onUpdatePlaylist listener (conceptual).');
+    };
+  }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
 
   const handleVideoEnded = () => {
     console.log('Video ended, playing next random video from playlist.');

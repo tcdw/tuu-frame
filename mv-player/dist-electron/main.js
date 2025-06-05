@@ -32531,6 +32531,41 @@ var expressExports = express$2.exports;
 var express = expressExports;
 const express$1 = /* @__PURE__ */ getDefaultExportFromCjs(express);
 const __dirname = path$3.dirname(fileURLToPath(import.meta.url));
+const PRESETS_FILE_PATH = path$3.join(app.getPath("userData"), "mv-player-presets.json");
+async function loadPresets() {
+  try {
+    await fs$2.access(PRESETS_FILE_PATH);
+    const data = await fs$2.readFile(PRESETS_FILE_PATH, "utf-8");
+    const presets = JSON.parse(data);
+    if (Array.isArray(presets) && presets.every((p) => typeof p === "string")) {
+      return presets;
+    }
+    return [];
+  } catch (error2) {
+    console.warn("Presets file not found or invalid, starting with empty presets.");
+    return [];
+  }
+}
+async function savePresets(presets) {
+  try {
+    await fs$2.writeFile(PRESETS_FILE_PATH, JSON.stringify(presets, null, 2));
+  } catch (error2) {
+    console.error("Error saving presets:", error2);
+  }
+}
+async function scanDirectoryForVideos(directoryPath) {
+  try {
+    const files = await fs$2.readdir(directoryPath);
+    const videoFiles = files.filter((file) => {
+      const ext = path$3.extname(file).toLowerCase();
+      return [".mp4", ".mkv", ".webm"].includes(ext);
+    }).map((file) => path$3.join(directoryPath, file));
+    return videoFiles;
+  } catch (error2) {
+    console.error(`Error scanning directory ${directoryPath}:`, error2);
+    return [];
+  }
+}
 process.env.APP_ROOT = path$3.join(__dirname, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path$3.join(process.env.APP_ROOT, "dist-electron");
@@ -32569,11 +32604,19 @@ app.whenReady().then(() => {
   protocol.registerFileProtocol("mv-stream", (request2, callback) => {
     const url2 = request2.url.replace("mv-stream://", "");
     try {
-      const decodedUrl = decodeURI(url2);
-      return callback(decodedUrl);
+      const decodedUrl = decodeURIComponent(url2);
+      console.log(`[mv-stream] Request URL: ${request2.url}`);
+      console.log(`[mv-stream] Extracted component: ${url2}`);
+      console.log(`[mv-stream] Attempting to serve decoded path: ${decodedUrl}`);
+      if (path$3.isAbsolute(decodedUrl)) {
+        return callback({ path: decodedUrl });
+      } else {
+        console.error(`[mv-stream] Path is not absolute: ${decodedUrl}`);
+        return callback({ error: -2 });
+      }
     } catch (error2) {
-      console.error("Failed to decode URL for mv-stream protocol:", error2);
-      return callback({ error: -1 });
+      console.error(`[mv-stream] Error processing URL ${request2.url}:`, error2);
+      return callback({ error: -6 });
     }
   });
   ipcMain.handle("dialog:openDirectory", async () => {
@@ -32581,20 +32624,19 @@ app.whenReady().then(() => {
       console.error("Main window is not available.");
       return;
     }
-    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    const { canceled, filePaths: selectedPaths } = await dialog.showOpenDialog(win, {
       properties: ["openDirectory"]
     });
-    if (canceled || filePaths.length === 0) {
-      return [];
+    if (canceled || selectedPaths.length === 0) {
+      return;
     }
-    const directoryPath = filePaths[0];
-    try {
-      const dirents = await fs$2.readdir(directoryPath, { withFileTypes: true });
-      const videoExtensions = [".mp4", ".mkv", ".webm"];
-      const videoFiles = dirents.filter((dirent) => dirent.isFile() && videoExtensions.includes(path$3.extname(dirent.name).toLowerCase())).map((dirent) => path$3.join(directoryPath, dirent.name));
+    const directoryPath = selectedPaths[0];
+    const videoFiles = await scanDirectoryForVideos(directoryPath);
+    if (videoFiles.length > 0) {
+      console.log("Videos found via dialog:", videoFiles);
       return videoFiles;
-    } catch (error2) {
-      console.error("Error scanning directory:", error2);
+    } else {
+      console.log("No video files found in the selected directory via dialog.");
       return [];
     }
   });
@@ -32617,9 +32659,80 @@ app.whenReady().then(() => {
   });
   createWindow();
   const expressApp = express$1();
+  expressApp.use(express$1.json());
   const port = 3001;
   expressApp.get("/api/ping", (_req, res2) => {
     res2.json({ message: "pong" });
+  });
+  expressApp.get("/api/presets", async (_req, res2) => {
+    const presets = await loadPresets();
+    res2.json(presets);
+  });
+  expressApp.post("/api/presets", async (req2, res2) => {
+    const { path: newPresetPath } = req2.body;
+    if (!newPresetPath || typeof newPresetPath !== "string") {
+      res2.status(400).json({ error: "Invalid path provided." });
+      return;
+    }
+    try {
+      const stats = await fs$2.stat(newPresetPath);
+      if (!stats.isDirectory()) {
+        res2.status(400).json({ error: "Path is not a directory." });
+        return;
+      }
+    } catch (error2) {
+      res2.status(400).json({ error: "Path does not exist or is inaccessible." });
+      return;
+    }
+    const currentPresets = await loadPresets();
+    if (currentPresets.includes(newPresetPath)) {
+      res2.status(409).json({ error: "Directory already in presets.", presets: currentPresets });
+      return;
+    }
+    const updatedPresets = [...currentPresets, newPresetPath];
+    await savePresets(updatedPresets);
+    res2.status(201).json(updatedPresets);
+  });
+  expressApp.delete("/api/presets", async (req2, res2) => {
+    const { path: pathToDelete } = req2.body;
+    if (!pathToDelete || typeof pathToDelete !== "string") {
+      res2.status(400).json({ error: "Invalid path provided for deletion." });
+      return;
+    }
+    const currentPresets = await loadPresets();
+    if (!currentPresets.includes(pathToDelete)) {
+      res2.status(404).json({ error: "Preset path not found." });
+      return;
+    }
+    const updatedPresets = currentPresets.filter((p) => p !== pathToDelete);
+    await savePresets(updatedPresets);
+    res2.status(200).json(updatedPresets);
+  });
+  expressApp.post("/api/set-active-directory", async (req2, res2) => {
+    const { path: directoryPath } = req2.body;
+    if (!directoryPath || typeof directoryPath !== "string") {
+      res2.status(400).json({ error: "Invalid directory path provided." });
+      return;
+    }
+    try {
+      const stats = await fs$2.stat(directoryPath);
+      if (!stats.isDirectory()) {
+        res2.status(400).json({ error: "Provided path is not a directory." });
+        return;
+      }
+    } catch (error2) {
+      res2.status(400).json({ error: "Directory path does not exist or is inaccessible." });
+      return;
+    }
+    const videoFiles = await scanDirectoryForVideos(directoryPath);
+    if (win) {
+      win.webContents.send("main:updatePlaylist", videoFiles);
+      console.log(`Sent main:updatePlaylist IPC with ${videoFiles.length} videos for path: ${directoryPath}`);
+      res2.status(200).json({ message: `Playlist updated with videos from ${directoryPath}`, videoCount: videoFiles.length });
+    } else {
+      console.error("Main window (win) not available to send IPC message.");
+      res2.status(500).json({ error: "Main window not available to update playlist." });
+    }
   });
   expressApp.listen(port, () => {
     console.log(`Express server listening on http://localhost:${port}`);

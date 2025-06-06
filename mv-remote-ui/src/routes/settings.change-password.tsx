@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../auth';
 

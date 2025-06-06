@@ -1,3 +1,5 @@
+/* eslint-disable no-var */
+
 /// <reference types="vite/client" />
 
 interface ElectronAPI {
@@ -6,8 +8,4 @@ interface ElectronAPI {
   onUpdatePlaylist: (callback: (videoFiles: string[]) => void) => void;
 }
 
-declare global {
-  interface Window {
-    electronAPI: ElectronAPI;
-  }
-}
+declare var electronAPI: ElectronAPI;

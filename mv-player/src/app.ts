@@ -65,8 +65,8 @@ if (videoElement) {
 }
 
 // Listen for playlist updates from the main process
-if (window.electronAPI && typeof window.electronAPI.onUpdatePlaylist === 'function') {
-  window.electronAPI.onUpdatePlaylist((newVideoFiles: string[]) => {
+if (globalThis.electronAPI && typeof globalThis.electronAPI.onUpdatePlaylist === 'function') {
+  globalThis.electronAPI.onUpdatePlaylist((newVideoFiles: string[]) => {
     console.log('Main process updated playlist:', newVideoFiles);
     currentPlaylist = newVideoFiles;
     if (newVideoFiles && newVideoFiles.length > 0) {

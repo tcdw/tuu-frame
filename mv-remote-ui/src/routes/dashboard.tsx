@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
+import { useAuth } from '../auth';
 import '../App.css'; // Assuming App.css is in src/ and contains relevant styles
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from '../services/api';
 import type { UIPreset } from '../services/api';
@@ -13,15 +14,39 @@ const pathToName = (path: string): string => {
 };
 
 export const Route = createFileRoute('/dashboard')({
+  // Adding a beforeLoad check as a more robust way to handle redirection
+  // before the component even tries to render or fetch data.
+  beforeLoad: () => { // Removed unused context and location for now
+    // This assumes `router.ts` is updated to provide `auth` in context.
+    // For now, this specific `beforeLoad` won't work as `context.auth` isn't set up yet.
+    // The component-level check will handle it.
+    // If we were to implement context.auth:
+    // if (!context.auth?.isAuthenticated) {
+    //   throw redirect({
+    //     to: '/login',
+    //     search: {
+    //       redirect: location.href,
+    //     },
+    //   });
+    // }
+  },
   component: DashboardComponent,
 });
 
 function DashboardComponent() {
+  const auth = useAuth();
+  const navigate = useNavigate();
   const [presets, setPresets] = useState<UIPreset[]>([]);
   const [newPresetPath, setNewPresetPath] = useState('');
   const [activeDirectoryPath, setActiveDirectoryPath] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true); // This is for presets loading
+
+  useEffect(() => {
+    if (!auth.isLoading && !auth.isAuthenticated) {
+      navigate({ to: '/login', replace: true });
+    }
+  }, [auth.isLoading, auth.isAuthenticated, navigate]);
 
   useEffect(() => {
     const fetchPresets = async () => {
@@ -106,13 +131,25 @@ function DashboardComponent() {
     }
   };
 
-  if (loading) {
-    return <div className="container"><p>Loading presets...</p></div>;
+  if (auth.isLoading || loading) { // Check auth loading state as well
+    return <div className="container"><p>Loading...</p></div>;
+  }
+
+  // This check is mostly a fallback, useEffect should handle the redirect.
+  if (!auth.isAuthenticated) {
+    return null; // Or a minimal loading spinner while redirecting
   }
 
   return (
     <div className="container">
-      <h1>MV Player Remote Control - Dashboard</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>MV Player Remote Control - Dashboard</h1>
+        <div>
+          {auth.username && <span style={{ marginRight: '10px' }}>Welcome, {auth.username}!</span>}
+          <Link to="/settings/change-password" style={{ marginRight: '10px' }}>Change Password</Link>
+          <button onClick={auth.logout}>Logout</button>
+        </div>
+      </div>
 
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
 

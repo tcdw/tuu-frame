@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
+// AuthProvider import removed from here
 
 const rootElement = document.getElementById('root')!;
 if (!rootElement.innerHTML) {
@@ -13,4 +14,6 @@ if (!rootElement.innerHTML) {
     </StrictMode>,
   );
 }
+
+
 

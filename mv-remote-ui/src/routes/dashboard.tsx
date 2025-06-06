@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import './App.css';
-import { getPresets, addPreset, deletePreset, setActiveDirectory } from './services/api';
-import type { UIPreset } from './services/api';
+import { createFileRoute } from '@tanstack/react-router';
+import '../App.css'; // Assuming App.css is in src/ and contains relevant styles
+import { getPresets, addPreset, deletePreset, setActiveDirectory } from '../services/api';
+import type { UIPreset } from '../services/api';
 
 // Helper to derive a name from a path
 const pathToName = (path: string): string => {
@@ -11,7 +12,11 @@ const pathToName = (path: string): string => {
   return normalizedPath.split('/').pop() || normalizedPath;
 };
 
-function App() {
+export const Route = createFileRoute('/dashboard')({
+  component: DashboardComponent,
+});
+
+function DashboardComponent() {
   const [presets, setPresets] = useState<UIPreset[]>([]);
   const [newPresetPath, setNewPresetPath] = useState('');
   const [activeDirectoryPath, setActiveDirectoryPath] = useState('');
@@ -107,7 +112,7 @@ function App() {
 
   return (
     <div className="container">
-      <h1>MV Player Remote Control</h1>
+      <h1>MV Player Remote Control - Dashboard</h1>
 
       {error && <p style={{ color: 'red' }}>Error: {error}</p>}
 
@@ -151,5 +156,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

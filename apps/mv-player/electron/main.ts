@@ -4,7 +4,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'node:url'
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import * as ApiTypes from '../src/shared-api-types';
+import * as ApiTypes from '../src/shared-api-types.ts';
 import {loadPresets, savePresets, scanDirectoryForVideos} from "./functions.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

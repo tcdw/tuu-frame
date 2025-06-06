@@ -1,7 +1,14 @@
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type AxiosResponse } from 'axios';
 import * as ApiTypes from '../../../mv-player/src/shared-api-types';
 
 const API_BASE_URL = 'http://localhost:3001/api';
+
+// Define the generic API response structure
+interface ApiResponse<TData> {
+  code: number;
+  data: TData | null; // Allow null as per existing logic, interceptor will check
+  err?: string;
+}
 
 // Create an axios instance
 const apiClient = axios.create({
@@ -10,6 +17,42 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add a response interceptor
+apiClient.interceptors.response.use(
+  // `response.data` is already parsed as JSON by axios.
+  // The first generic to `AxiosResponse` here is the type of `response.data`.
+  (response: AxiosResponse<ApiResponse<any>>) => {
+    const apiResponse = response.data; // This is our ApiResponse<TData>
+
+    // addPreset can return 201 for successful creation
+    const isAddPresetSuccess =
+      response.config.url === '/presets' &&
+      response.config.method === 'post' &&
+      apiResponse.code === 201;
+
+    if (apiResponse.code !== 200 && !isAddPresetSuccess) {
+      throw new Error(apiResponse.err || `API Error: Code ${apiResponse.code} for ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    }
+
+    // The original code threw an error if data was null for all these endpoints.
+    if (apiResponse.data === null) {
+      throw new Error(`Received null data from API for ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    }
+
+    return apiResponse.data; // Resolves the promise with the actual data payload
+  },
+  (error: AxiosError<{ err?: string }>) => {
+    // Handle HTTP errors or network errors
+    if (error.response && error.response.data && error.response.data.err) {
+      // If the server sent a JSON response with an 'err' field
+      throw new Error(error.response.data.err);
+    }
+    // Fallback to Axios error message or a generic one
+    throw new Error(error.message || 'An unexpected API error occurred.');
+  }
+);
+
 
 // Interface for Preset objects used within the UI (App.tsx)
 // The API for GET /presets currently returns string[] (paths)
@@ -24,27 +67,9 @@ export interface UIPreset {
  * API returns: string[]
  */
 export async function getPresets(): Promise<ApiTypes.PresetsListData> {
-  try {
-    const response = await apiClient.get<ApiTypes.PresetsListResponse>('/presets');
-    const parsedResponse = response.data;
-
-    if (parsedResponse.code !== 200) {
-      throw new Error(parsedResponse.err || `Failed to get presets. API Code: ${parsedResponse.code}`);
-    }
-    if (parsedResponse.data === null) {
-      throw new Error('Received null data for presets list.');
-    }
-    return parsedResponse.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ err?: string }>;
-      if (axiosError.response?.data?.err) {
-        throw new Error(axiosError.response.data.err);
-      }
-      throw new Error(axiosError.message || 'Failed to get presets.');
-    }
-    throw error; // Re-throw other errors
-  }
+  // T (1st generic): type of response.data = ApiResponse<ApiTypes.PresetsListData>
+  // R (2nd generic): type the promise resolves to = ApiTypes.PresetsListData
+  return apiClient.get<ApiResponse<ApiTypes.PresetsListData>, ApiTypes.PresetsListData>('/presets');
 }
 
 /**
@@ -53,30 +78,10 @@ export async function getPresets(): Promise<ApiTypes.PresetsListData> {
  * API returns: { message: string; presets: string[] }
  */
 export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSuccessData> {
-  try {
-    const response = await apiClient.post<ApiTypes.PresetMutationSuccessResponse>(
-      '/presets',
-      { path } as ApiTypes.AddPresetRequest
-    );
-    const parsedResponse = response.data;
-
-    if (parsedResponse.code !== 200 && parsedResponse.code !== 201) {
-      throw new Error(parsedResponse.err || `Failed to add preset. API Code: ${parsedResponse.code}`);
-    }
-    if (parsedResponse.data === null) {
-      throw new Error('Received null data after adding preset.');
-    }
-    return parsedResponse.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ err?: string }>;
-      if (axiosError.response?.data?.err) {
-        throw new Error(axiosError.response.data.err);
-      }
-      throw new Error(axiosError.message || 'Failed to add preset.');
-    }
-    throw error; // Re-throw other errors
-  }
+  return apiClient.post<ApiResponse<ApiTypes.PresetMutationSuccessData>, ApiTypes.PresetMutationSuccessData>(
+    '/presets',
+    { path } as ApiTypes.AddPresetRequest
+  );
 }
 
 /**
@@ -85,31 +90,11 @@ export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSu
  * API returns: { message: string; presets: string[] }
  */
 export async function deletePreset(path: string): Promise<ApiTypes.PresetMutationSuccessData> {
-  try {
-    // For DELETE requests with a body, axios expects data to be in the `data` property of the config object
-    const response = await apiClient.delete<ApiTypes.PresetMutationSuccessResponse>(
-      '/presets',
-      { data: { path } as ApiTypes.DeletePresetRequest }
-    );
-    const parsedResponse = response.data;
-
-    if (parsedResponse.code !== 200) {
-      throw new Error(parsedResponse.err || `Failed to delete preset. API Code: ${parsedResponse.code}`);
-    }
-    if (parsedResponse.data === null) {
-      throw new Error('Received null data after deleting preset.');
-    }
-    return parsedResponse.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ err?: string }>;
-      if (axiosError.response?.data?.err) {
-        throw new Error(axiosError.response.data.err);
-      }
-      throw new Error(axiosError.message || 'Failed to delete preset.');
-    }
-    throw error; // Re-throw other errors
-  }
+  // For DELETE requests with a body, axios expects data to be in the `data` property of the config object
+  return apiClient.delete<ApiResponse<ApiTypes.PresetMutationSuccessData>, ApiTypes.PresetMutationSuccessData>(
+    '/presets',
+    { data: { path } as ApiTypes.DeletePresetRequest }
+  );
 }
 
 /**
@@ -118,28 +103,8 @@ export async function deletePreset(path: string): Promise<ApiTypes.PresetMutatio
  * API returns: { message: string; videoCount: number }
  */
 export async function setActiveDirectory(path: string): Promise<ApiTypes.SetActiveDirectorySuccessData> {
-  try {
-    const response = await apiClient.post<ApiTypes.SetActiveDirectorySuccessResponse>(
-      '/set-active-directory',
-      { path } as ApiTypes.SetActiveDirectoryRequest
-    );
-    const parsedResponse = response.data;
-
-    if (parsedResponse.code !== 200) {
-      throw new Error(parsedResponse.err || `Failed to set active directory. API Code: ${parsedResponse.code}`);
-    }
-    if (parsedResponse.data === null) {
-      throw new Error('Received null data after setting active directory.');
-    }
-    return parsedResponse.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ err?: string }>;
-      if (axiosError.response?.data?.err) {
-        throw new Error(axiosError.response.data.err);
-      }
-      throw new Error(axiosError.message || 'Failed to set active directory.');
-    }
-    throw error; // Re-throw other errors
-  }
+  return apiClient.post<ApiResponse<ApiTypes.SetActiveDirectorySuccessData>, ApiTypes.SetActiveDirectorySuccessData>(
+    '/set-active-directory',
+    { path } as ApiTypes.SetActiveDirectoryRequest
+  );
 }

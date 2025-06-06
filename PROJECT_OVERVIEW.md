@@ -67,12 +67,12 @@ Located in the `/Users/tcdw/Projects/mtv/mv-remote-ui/` directory (currently par
 *   **Language**: TypeScript
 *   **Build Tool**: Vite
 *   **Styling**: CSS
-*   **API Communication**: Fetch API
+*   **API Communication**: Axios (utilizing interceptors for centralized API response handling)
 
 ### Key Files:
 
 *   `src/App.tsx`: Main React component containing the UI and logic for interacting with the API.
-*   `src/services/api.ts`: Module encapsulating API calls to the `mv-player` backend.
+*   `src/services/api.ts`: Module encapsulating API calls to the `mv-player` backend using Axios. It employs response interceptors to consistently manage the common API response wrapper (`{code, data, err}`) and streamline error handling.
 *   `vite.config.ts`: Vite build configuration.
 *   `package.json`: Project dependencies and scripts.
 
@@ -92,4 +92,4 @@ Located in the `/Users/tcdw/Projects/mtv/mv-remote-ui/` directory (currently par
 4.  **Thorough Testing**: Conduct comprehensive testing of all features.
 5.  **Error Handling & Robustness**: Further improve error handling on both client and server sides.
 
-This document was last updated on: 2025-06-05T18:44:39+08:00.
+This document was last updated on: 2025-06-06T18:56:03+08:00.

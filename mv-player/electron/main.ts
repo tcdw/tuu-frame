@@ -4,6 +4,7 @@ import cors from 'cors';
 import { fileURLToPath } from 'node:url'
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import * as ApiTypes from '../src/shared-api-types';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -189,84 +190,84 @@ app.whenReady().then(() => {
   expressApp.use(express.json()); // Middleware to parse JSON bodies
   const port = 3001;
 
-  expressApp.get('/api/ping', (_req, res) => {
+  expressApp.get('/api/ping', (_req: Request, res: Response<ApiTypes.PingResponse>) => {
     res.json({ message: 'pong' });
   });
 
   // Get all presets
-  expressApp.get('/api/presets', async (_req, res) => {
+  expressApp.get('/api/presets', async (_req: Request, res: Response<ApiTypes.PresetsGetResponse>) => {
     const presets = await loadPresets();
     res.json(presets);
   });
 
   // Add a new preset
-  expressApp.post('/api/presets', (async (req: Request, res: Response) => {
-    const { path: newPresetPath } = req.body;
+  expressApp.post('/api/presets', (async (req: Request<never, ApiTypes.PresetOperationResponse, ApiTypes.AddPresetRequest>, res: Response<ApiTypes.PresetOperationResponse>) => {
+    const { path: newPresetPath }: ApiTypes.AddPresetRequest = req.body;
 
     if (!newPresetPath || typeof newPresetPath !== 'string') {
-      res.status(400).json({ error: 'Invalid path provided.' });
+      res.status(400).json({ error: 'Invalid path provided.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
     try {
       const stats = await fs.stat(newPresetPath);
       if (!stats.isDirectory()) {
-        res.status(400).json({ error: 'Path is not a directory.' });
+        res.status(400).json({ error: 'Path is not a directory.' } as ApiTypes.ApiErrorResponse);
         return;
       }
     } catch (error) {
-      res.status(400).json({ error: 'Path does not exist or is inaccessible.' });
+      res.status(400).json({ error: 'Path does not exist or is inaccessible.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
     const currentPresets = await loadPresets();
     if (currentPresets.includes(newPresetPath)) {
-      res.status(409).json({ error: 'Directory already in presets.', presets: currentPresets });
+      res.status(409).json({ error: 'Preset already exists.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
     const updatedPresets = [...currentPresets, newPresetPath];
     await savePresets(updatedPresets);
-    res.status(201).json(updatedPresets);
+    res.json({ presets: updatedPresets, message: 'Preset added successfully.' } as ApiTypes.PresetMutationSuccessResponse);
   }) as any);
 
   // Delete a preset
-  expressApp.delete('/api/presets', (async (req: Request, res: Response) => {
-    const { path: pathToDelete } = req.body;
+  expressApp.delete('/api/presets', (async (req: Request<never, ApiTypes.PresetOperationResponse, ApiTypes.DeletePresetRequest>, res: Response<ApiTypes.PresetOperationResponse>) => {
+    const { path: pathToDelete }: ApiTypes.DeletePresetRequest = req.body;
 
     if (!pathToDelete || typeof pathToDelete !== 'string') {
-      res.status(400).json({ error: 'Invalid path provided for deletion.' });
+      res.status(400).json({ error: 'Invalid path provided for deletion.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
     const currentPresets = await loadPresets();
     if (!currentPresets.includes(pathToDelete)) {
-      res.status(404).json({ error: 'Preset path not found.' });
+      res.status(404).json({ error: 'Preset path not found.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
     const updatedPresets = currentPresets.filter(p => p !== pathToDelete);
     await savePresets(updatedPresets);
-    res.status(200).json(updatedPresets); // Or res.status(204).send(); if no content needed
+    res.json({ presets: updatedPresets, message: 'Preset deleted successfully.' } as ApiTypes.PresetMutationSuccessResponse);
   }) as any);
 
   // Set active directory and trigger playlist update in renderer
-  expressApp.post('/api/set-active-directory', (async (req: Request, res: Response) => {
-    const { path: directoryPath } = req.body;
+  expressApp.post('/api/set-active-directory', (async (req: Request<never, ApiTypes.SetActiveDirectoryResponse, ApiTypes.SetActiveDirectoryRequest>, res: Response<ApiTypes.SetActiveDirectoryResponse>) => {
+    const { path: directoryPath }: ApiTypes.SetActiveDirectoryRequest = req.body;
 
     if (!directoryPath || typeof directoryPath !== 'string') {
-      res.status(400).json({ error: 'Invalid directory path provided.' });
+      res.status(400).json({ error: 'Invalid directory path provided.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
     try {
       const stats = await fs.stat(directoryPath);
       if (!stats.isDirectory()) {
-        res.status(400).json({ error: 'Provided path is not a directory.' });
+        res.status(400).json({ error: 'Provided path is not a directory.' } as ApiTypes.ApiErrorResponse);
         return;
       }
     } catch (error) {
-      res.status(400).json({ error: 'Directory path does not exist or is inaccessible.' });
+      res.status(400).json({ error: 'Directory path does not exist or is inaccessible.' } as ApiTypes.ApiErrorResponse);
       return;
     }
 
@@ -275,10 +276,10 @@ app.whenReady().then(() => {
     if (win) {
       win.webContents.send('main:updatePlaylist', videoFiles);
       console.log(`Sent main:updatePlaylist IPC with ${videoFiles.length} videos for path: ${directoryPath}`);
-      res.status(200).json({ message: `Playlist updated with videos from ${directoryPath}`, videoCount: videoFiles.length });
+      res.json({ message: `Active directory set to ${directoryPath}. Playlist updated.`, videoCount: videoFiles.length } as ApiTypes.SetActiveDirectorySuccessResponse);
     } else {
       console.error('Main window (win) not available to send IPC message.');
-      res.status(500).json({ error: 'Main window not available to update playlist.' });
+      res.status(500).json({ error: 'Main window not available to update playlist.' } as ApiTypes.ApiErrorResponse);
     }
   }) as any);
 

@@ -25301,7 +25301,7 @@ var objectInspect = function inspect_(obj, options, depth, seen) {
     var ys = arrObjKeys(obj, inspect2);
     var isPlainObject = gPO ? gPO(obj) === Object.prototype : obj instanceof Object || obj.constructor === Object;
     var protoTag = obj instanceof Object ? "" : "null prototype";
-    var stringTag = !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj ? $slice.call(toStr$1(obj), 8, -1) : protoTag ? "Object" : "";
+    var stringTag = !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj ? $slice.call(toStr(obj), 8, -1) : protoTag ? "Object" : "";
     var constructorTag = isPlainObject || typeof obj.constructor !== "function" ? "" : obj.constructor.name ? obj.constructor.name + " " : "";
     var tag = constructorTag + (stringTag || protoTag ? "[" + $join.call($concat$1.call([], stringTag || [], protoTag || []), ": ") + "] " : "");
     if (ys.length === 0) {
@@ -25326,25 +25326,25 @@ function canTrustToString(obj) {
   return !toStringTag || !(typeof obj === "object" && (toStringTag in obj || typeof obj[toStringTag] !== "undefined"));
 }
 function isArray$3(obj) {
-  return toStr$1(obj) === "[object Array]" && canTrustToString(obj);
+  return toStr(obj) === "[object Array]" && canTrustToString(obj);
 }
 function isDate$1(obj) {
-  return toStr$1(obj) === "[object Date]" && canTrustToString(obj);
+  return toStr(obj) === "[object Date]" && canTrustToString(obj);
 }
 function isRegExp$1(obj) {
-  return toStr$1(obj) === "[object RegExp]" && canTrustToString(obj);
+  return toStr(obj) === "[object RegExp]" && canTrustToString(obj);
 }
 function isError(obj) {
-  return toStr$1(obj) === "[object Error]" && canTrustToString(obj);
+  return toStr(obj) === "[object Error]" && canTrustToString(obj);
 }
 function isString(obj) {
-  return toStr$1(obj) === "[object String]" && canTrustToString(obj);
+  return toStr(obj) === "[object String]" && canTrustToString(obj);
 }
 function isNumber(obj) {
-  return toStr$1(obj) === "[object Number]" && canTrustToString(obj);
+  return toStr(obj) === "[object Number]" && canTrustToString(obj);
 }
 function isBoolean(obj) {
-  return toStr$1(obj) === "[object Boolean]" && canTrustToString(obj);
+  return toStr(obj) === "[object Boolean]" && canTrustToString(obj);
 }
 function isSymbol(obj) {
   if (hasShammedSymbols) {
@@ -25380,7 +25380,7 @@ var hasOwn$1 = Object.prototype.hasOwnProperty || function(key) {
 function has$3(obj, key) {
   return hasOwn$1.call(obj, key);
 }
-function toStr$1(obj) {
+function toStr(obj) {
   return objectToString.call(obj);
 }
 function nameOf(f) {
@@ -25689,7 +25689,7 @@ var syntax = SyntaxError;
 var uri = URIError;
 var abs$1 = Math.abs;
 var floor$1 = Math.floor;
-var max$2 = Math.max;
+var max$1 = Math.max;
 var min$1 = Math.min;
 var pow$1 = Math.pow;
 var round$1 = Math.round;
@@ -25818,78 +25818,99 @@ function requireObject_getPrototypeOf() {
   Object_getPrototypeOf = $Object2.getPrototypeOf || null;
   return Object_getPrototypeOf;
 }
-var ERROR_MESSAGE = "Function.prototype.bind called on incompatible ";
-var toStr = Object.prototype.toString;
-var max$1 = Math.max;
-var funcType = "[object Function]";
-var concatty = function concatty2(a, b) {
-  var arr = [];
-  for (var i = 0; i < a.length; i += 1) {
-    arr[i] = a[i];
-  }
-  for (var j = 0; j < b.length; j += 1) {
-    arr[j + a.length] = b[j];
-  }
-  return arr;
-};
-var slicy = function slicy2(arrLike, offset) {
-  var arr = [];
-  for (var i = offset, j = 0; i < arrLike.length; i += 1, j += 1) {
-    arr[j] = arrLike[i];
-  }
-  return arr;
-};
-var joiny = function(arr, joiner) {
-  var str = "";
-  for (var i = 0; i < arr.length; i += 1) {
-    str += arr[i];
-    if (i + 1 < arr.length) {
-      str += joiner;
+var implementation;
+var hasRequiredImplementation;
+function requireImplementation() {
+  if (hasRequiredImplementation) return implementation;
+  hasRequiredImplementation = 1;
+  var ERROR_MESSAGE = "Function.prototype.bind called on incompatible ";
+  var toStr2 = Object.prototype.toString;
+  var max2 = Math.max;
+  var funcType = "[object Function]";
+  var concatty = function concatty2(a, b) {
+    var arr = [];
+    for (var i = 0; i < a.length; i += 1) {
+      arr[i] = a[i];
     }
-  }
-  return str;
-};
-var implementation$1 = function bind(that) {
-  var target = this;
-  if (typeof target !== "function" || toStr.apply(target) !== funcType) {
-    throw new TypeError(ERROR_MESSAGE + target);
-  }
-  var args = slicy(arguments, 1);
-  var bound;
-  var binder = function() {
-    if (this instanceof bound) {
-      var result = target.apply(
-        this,
+    for (var j = 0; j < b.length; j += 1) {
+      arr[j + a.length] = b[j];
+    }
+    return arr;
+  };
+  var slicy = function slicy2(arrLike, offset) {
+    var arr = [];
+    for (var i = offset, j = 0; i < arrLike.length; i += 1, j += 1) {
+      arr[j] = arrLike[i];
+    }
+    return arr;
+  };
+  var joiny = function(arr, joiner) {
+    var str = "";
+    for (var i = 0; i < arr.length; i += 1) {
+      str += arr[i];
+      if (i + 1 < arr.length) {
+        str += joiner;
+      }
+    }
+    return str;
+  };
+  implementation = function bind2(that) {
+    var target = this;
+    if (typeof target !== "function" || toStr2.apply(target) !== funcType) {
+      throw new TypeError(ERROR_MESSAGE + target);
+    }
+    var args = slicy(arguments, 1);
+    var bound;
+    var binder = function() {
+      if (this instanceof bound) {
+        var result = target.apply(
+          this,
+          concatty(args, arguments)
+        );
+        if (Object(result) === result) {
+          return result;
+        }
+        return this;
+      }
+      return target.apply(
+        that,
         concatty(args, arguments)
       );
-      if (Object(result) === result) {
-        return result;
-      }
-      return this;
-    }
-    return target.apply(
-      that,
-      concatty(args, arguments)
-    );
-  };
-  var boundLength = max$1(0, target.length - args.length);
-  var boundArgs = [];
-  for (var i = 0; i < boundLength; i++) {
-    boundArgs[i] = "$" + i;
-  }
-  bound = Function("binder", "return function (" + joiny(boundArgs, ",") + "){ return binder.apply(this,arguments); }")(binder);
-  if (target.prototype) {
-    var Empty = function Empty2() {
     };
-    Empty.prototype = target.prototype;
-    bound.prototype = new Empty();
-    Empty.prototype = null;
-  }
-  return bound;
-};
-var implementation = implementation$1;
-var functionBind = Function.prototype.bind || implementation;
-var functionCall = Function.prototype.call;
+    var boundLength = max2(0, target.length - args.length);
+    var boundArgs = [];
+    for (var i = 0; i < boundLength; i++) {
+      boundArgs[i] = "$" + i;
+    }
+    bound = Function("binder", "return function (" + joiny(boundArgs, ",") + "){ return binder.apply(this,arguments); }")(binder);
+    if (target.prototype) {
+      var Empty = function Empty2() {
+      };
+      Empty.prototype = target.prototype;
+      bound.prototype = new Empty();
+      Empty.prototype = null;
+    }
+    return bound;
+  };
+  return implementation;
+}
+var functionBind;
+var hasRequiredFunctionBind;
+function requireFunctionBind() {
+  if (hasRequiredFunctionBind) return functionBind;
+  hasRequiredFunctionBind = 1;
+  var implementation2 = requireImplementation();
+  functionBind = Function.prototype.bind || implementation2;
+  return functionBind;
+}
+var functionCall;
+var hasRequiredFunctionCall;
+function requireFunctionCall() {
+  if (hasRequiredFunctionCall) return functionCall;
+  hasRequiredFunctionCall = 1;
+  functionCall = Function.prototype.call;
+  return functionCall;
+}
 var functionApply;
 var hasRequiredFunctionApply;
 function requireFunctionApply() {
@@ -25899,14 +25920,14 @@ function requireFunctionApply() {
   return functionApply;
 }
 var reflectApply = typeof Reflect !== "undefined" && Reflect && Reflect.apply;
-var bind$2 = functionBind;
+var bind$2 = requireFunctionBind();
 var $apply$1 = requireFunctionApply();
-var $call$2 = functionCall;
+var $call$2 = requireFunctionCall();
 var $reflectApply = reflectApply;
 var actualApply = $reflectApply || bind$2.call($call$2, $apply$1);
-var bind$1 = functionBind;
+var bind$1 = requireFunctionBind();
 var $TypeError$4 = type;
-var $call$1 = functionCall;
+var $call$1 = requireFunctionCall();
 var $actualApply = actualApply;
 var callBindApplyHelpers = function callBindBasic(args) {
   if (args.length < 1 || typeof args[0] !== "function") {
@@ -25972,8 +25993,8 @@ function requireHasown() {
   hasRequiredHasown = 1;
   var call = Function.prototype.call;
   var $hasOwn = Object.prototype.hasOwnProperty;
-  var bind3 = functionBind;
-  hasown = bind3.call(call, $hasOwn);
+  var bind2 = requireFunctionBind();
+  hasown = bind2.call(call, $hasOwn);
   return hasown;
 }
 var undefined$1;
@@ -25987,7 +26008,7 @@ var $TypeError$3 = type;
 var $URIError = uri;
 var abs = abs$1;
 var floor = floor$1;
-var max = max$2;
+var max = max$1;
 var min = min$1;
 var pow = pow$1;
 var round = round$1;
@@ -26021,7 +26042,7 @@ var getProto = requireGetProto();
 var $ObjectGPO = requireObject_getPrototypeOf();
 var $ReflectGPO = requireReflect_getPrototypeOf();
 var $apply = requireFunctionApply();
-var $call = functionCall;
+var $call = requireFunctionCall();
 var needsEval = {};
 var TypedArray = typeof Uint8Array === "undefined" || !getProto ? undefined$1 : getProto(Uint8Array);
 var INTRINSICS = {
@@ -26192,13 +26213,13 @@ var LEGACY_ALIASES = {
   "%WeakMapPrototype%": ["WeakMap", "prototype"],
   "%WeakSetPrototype%": ["WeakSet", "prototype"]
 };
-var bind2 = functionBind;
+var bind = requireFunctionBind();
 var hasOwn = requireHasown();
-var $concat = bind2.call($call, Array.prototype.concat);
-var $spliceApply = bind2.call($apply, Array.prototype.splice);
-var $replace = bind2.call($call, String.prototype.replace);
-var $strSlice = bind2.call($call, String.prototype.slice);
-var $exec = bind2.call($call, RegExp.prototype.exec);
+var $concat = bind.call($call, Array.prototype.concat);
+var $spliceApply = bind.call($apply, Array.prototype.splice);
+var $replace = bind.call($call, String.prototype.replace);
+var $strSlice = bind.call($call, String.prototype.slice);
+var $exec = bind.call($call, RegExp.prototype.exec);
 var rePropName = /[^%.[\]]+|\[(?:(-?\d+(?:\.\d+)?)|(["'])((?:(?!\2)[^\\]|\\.)*?)\2)\]|(?=(?:\.|\[\])(?:\.|\[\]|%$))/g;
 var reEscapeChar = /\\(\\)?/g;
 var stringToPath = function stringToPath2(string) {
@@ -32965,12 +32986,12 @@ app.whenReady().then(() => {
     }
     const currentPresets = await loadPresets();
     if (currentPresets.includes(newPresetPath)) {
-      res2.status(409).json({ error: "Directory already in presets.", presets: currentPresets });
+      res2.status(409).json({ error: "Preset already exists." });
       return;
     }
     const updatedPresets = [...currentPresets, newPresetPath];
     await savePresets(updatedPresets);
-    res2.status(201).json(updatedPresets);
+    res2.json({ presets: updatedPresets, message: "Preset added successfully." });
   });
   expressApp.delete("/api/presets", async (req2, res2) => {
     const { path: pathToDelete } = req2.body;
@@ -32985,7 +33006,7 @@ app.whenReady().then(() => {
     }
     const updatedPresets = currentPresets.filter((p) => p !== pathToDelete);
     await savePresets(updatedPresets);
-    res2.status(200).json(updatedPresets);
+    res2.json({ presets: updatedPresets, message: "Preset deleted successfully." });
   });
   expressApp.post("/api/set-active-directory", async (req2, res2) => {
     const { path: directoryPath } = req2.body;
@@ -33007,7 +33028,7 @@ app.whenReady().then(() => {
     if (win) {
       win.webContents.send("main:updatePlaylist", videoFiles);
       console.log(`Sent main:updatePlaylist IPC with ${videoFiles.length} videos for path: ${directoryPath}`);
-      res2.status(200).json({ message: `Playlist updated with videos from ${directoryPath}`, videoCount: videoFiles.length });
+      res2.json({ message: `Active directory set to ${directoryPath}. Playlist updated.`, videoCount: videoFiles.length });
     } else {
       console.error("Main window (win) not available to send IPC message.");
       res2.status(500).json({ error: "Main window not available to update playlist." });

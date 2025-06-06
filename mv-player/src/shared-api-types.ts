@@ -1,24 +1,31 @@
-// General Error Response structure that can be used by API endpoints
-export interface ApiErrorResponse {
-  error: string;
+// Standard API Response Wrapper
+export interface ApiResponse<T> {
+  code: number; // HTTP status code or custom app status code
+  data: T | null;
+  err: string | null;
 }
+
+// The ApiErrorResponse is now implicitly handled by ApiResponse when err is not null.
 
 // --- /api/ping ---
-export interface PingResponse {
+export interface PingData {
   message: 'pong';
 }
+export type PingResponse = ApiResponse<PingData>;
 
 // --- /api/presets ---
-export type PresetsListResponse = string[];
+export type PresetsListData = string[];
+export type PresetsListResponse = ApiResponse<PresetsListData>;
 
 export interface AddPresetRequest {
   path: string;
 }
-// Successful response for adding/deleting a preset includes the updated list
-export interface PresetMutationSuccessResponse {
+
+export interface PresetMutationSuccessData {
   presets: string[];
   message?: string;
 }
+export type PresetMutationSuccessResponse = ApiResponse<PresetMutationSuccessData>;
 
 export interface DeletePresetRequest {
   path: string;
@@ -29,13 +36,13 @@ export interface SetActiveDirectoryRequest {
   path: string;
 }
 
-// Successful response for setting active directory
-export interface SetActiveDirectorySuccessResponse {
+export interface SetActiveDirectorySuccessData {
   message: string;
   videoCount?: number;
 }
+export type SetActiveDirectorySuccessResponse = ApiResponse<SetActiveDirectorySuccessData>;
 
-// Union type for common successful preset operations, useful for client-side handling
-export type PresetOperationResponse = PresetMutationSuccessResponse | ApiErrorResponse;
-export type PresetsGetResponse = PresetsListResponse | ApiErrorResponse;
-export type SetActiveDirectoryResponse = SetActiveDirectorySuccessResponse | ApiErrorResponse;
+// The union types below are no longer needed as ApiResponse handles success/error states.
+// export type PresetOperationResponse = PresetMutationSuccessResponse; // Now just ApiResponse<PresetMutationSuccessData>
+// export type PresetsGetResponse = PresetsListResponse; // Now just ApiResponse<PresetsListData>
+// export type SetActiveDirectoryResponse = SetActiveDirectorySuccessResponse; // Now just ApiResponse<SetActiveDirectorySuccessData>

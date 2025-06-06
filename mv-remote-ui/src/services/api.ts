@@ -14,14 +14,17 @@ export interface UIPreset {
  * Fetches the list of preset paths from the server.
  * API returns: string[]
  */
-export async function getPresets(): Promise<ApiTypes.PresetsListResponse> {
+export async function getPresets(): Promise<ApiTypes.PresetsListData> {
   const response = await fetch(`${API_BASE_URL}/presets`);
-  if (!response.ok) {
-    const errorText = await response.text();
-        const errorJson: ApiTypes.ApiErrorResponse = { error: errorText || response.statusText };
-    throw new Error(errorJson.error);
+  const parsedResponse: ApiTypes.PresetsListResponse = await response.json();
+
+  if (!response.ok || parsedResponse.code !== 200) {
+    throw new Error(parsedResponse.err || `Failed to get presets. Status: ${response.status}`);
   }
-  return response.json();
+  if (parsedResponse.data === null) {
+    throw new Error('Received null data for presets list.');
+  }
+  return parsedResponse.data;
 }
 
 /**
@@ -29,7 +32,7 @@ export async function getPresets(): Promise<ApiTypes.PresetsListResponse> {
  * API expects: { path: string }
  * API returns: { message: string; presets: string[] }
  */
-export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSuccessResponse> {
+export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSuccessData> {
   const response = await fetch(`${API_BASE_URL}/presets`, {
     method: 'POST',
     headers: {
@@ -37,11 +40,15 @@ export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSu
     },
     body: JSON.stringify({ path } as ApiTypes.AddPresetRequest),
   });
-  if (!response.ok) {
-        const errorJson: ApiTypes.ApiErrorResponse = await response.json().catch(() => ({ error: `HTTP error ${response.status} and failed to parse error response` }));
-    throw new Error(errorJson.error || `Failed to add preset: ${response.statusText}`);
+  const parsedResponse: ApiTypes.PresetMutationSuccessResponse = await response.json();
+
+  if (!response.ok || (parsedResponse.code !== 200 && parsedResponse.code !== 201)) {
+    throw new Error(parsedResponse.err || `Failed to add preset. Status: ${response.status}`);
   }
-  return response.json();
+  if (parsedResponse.data === null) {
+    throw new Error('Received null data after adding preset.');
+  }
+  return parsedResponse.data;
 }
 
 /**
@@ -49,7 +56,7 @@ export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSu
  * API expects: { path: string }
  * API returns: { message: string; presets: string[] }
  */
-export async function deletePreset(path: string): Promise<ApiTypes.PresetMutationSuccessResponse> {
+export async function deletePreset(path: string): Promise<ApiTypes.PresetMutationSuccessData> {
   const response = await fetch(`${API_BASE_URL}/presets`, {
     method: 'DELETE',
     headers: {
@@ -57,11 +64,15 @@ export async function deletePreset(path: string): Promise<ApiTypes.PresetMutatio
     },
     body: JSON.stringify({ path } as ApiTypes.DeletePresetRequest),
   });
-  if (!response.ok) {
-        const errorJson: ApiTypes.ApiErrorResponse = await response.json().catch(() => ({ error: `HTTP error ${response.status} and failed to parse error response` }));
-    throw new Error(errorJson.error || `Failed to delete preset: ${response.statusText}`);
+  const parsedResponse: ApiTypes.PresetMutationSuccessResponse = await response.json();
+
+  if (!response.ok || parsedResponse.code !== 200) {
+    throw new Error(parsedResponse.err || `Failed to delete preset. Status: ${response.status}`);
   }
-  return response.json();
+  if (parsedResponse.data === null) {
+    throw new Error('Received null data after deleting preset.');
+  }
+  return parsedResponse.data;
 }
 
 /**
@@ -69,7 +80,7 @@ export async function deletePreset(path: string): Promise<ApiTypes.PresetMutatio
  * API expects: { path: string }
  * API returns: { message: string; videoCount: number }
  */
-export async function setActiveDirectory(path: string): Promise<ApiTypes.SetActiveDirectorySuccessResponse> {
+export async function setActiveDirectory(path: string): Promise<ApiTypes.SetActiveDirectorySuccessData> {
   const response = await fetch(`${API_BASE_URL}/set-active-directory`, {
     method: 'POST',
     headers: {
@@ -77,9 +88,13 @@ export async function setActiveDirectory(path: string): Promise<ApiTypes.SetActi
     },
     body: JSON.stringify({ path } as ApiTypes.SetActiveDirectoryRequest),
   });
-  if (!response.ok) {
-        const errorJson: ApiTypes.ApiErrorResponse = await response.json().catch(() => ({ error: `HTTP error ${response.status} and failed to parse error response` }));
-    throw new Error(errorJson.error || `Failed to set active directory: ${response.statusText}`);
+  const parsedResponse: ApiTypes.SetActiveDirectorySuccessResponse = await response.json();
+
+  if (!response.ok || parsedResponse.code !== 200) {
+    throw new Error(parsedResponse.err || `Failed to set active directory. Status: ${response.status}`);
   }
-  return response.json();
+  if (parsedResponse.data === null) {
+    throw new Error('Received null data after setting active directory.');
+  }
+  return parsedResponse.data;
 }

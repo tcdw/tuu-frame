@@ -191,83 +191,83 @@ app.whenReady().then(() => {
   const port = 3001;
 
   expressApp.get('/api/ping', (_req: Request, res: Response<ApiTypes.PingResponse>) => {
-    res.json({ message: 'pong' });
+    res.json({ code: 200, data: { message: 'pong' }, err: null });
   });
 
   // Get all presets
-  expressApp.get('/api/presets', async (_req: Request, res: Response<ApiTypes.PresetsGetResponse>) => {
+  expressApp.get('/api/presets', async (_req: Request, res: Response<ApiTypes.PresetsListResponse>) => {
     const presets = await loadPresets();
-    res.json(presets);
+    res.json({ code: 200, data: presets, err: null });
   });
 
   // Add a new preset
-  expressApp.post('/api/presets', (async (req: Request<never, ApiTypes.PresetOperationResponse, ApiTypes.AddPresetRequest>, res: Response<ApiTypes.PresetOperationResponse>) => {
+  expressApp.post('/api/presets', (async (req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.AddPresetRequest>, res: Response<ApiTypes.PresetMutationSuccessResponse>) => {
     const { path: newPresetPath }: ApiTypes.AddPresetRequest = req.body;
 
     if (!newPresetPath || typeof newPresetPath !== 'string') {
-      res.status(400).json({ error: 'Invalid path provided.' } as ApiTypes.ApiErrorResponse);
+      res.status(400).json({ code: 400, data: null, err: 'Invalid path provided.' });
       return;
     }
 
     try {
       const stats = await fs.stat(newPresetPath);
       if (!stats.isDirectory()) {
-        res.status(400).json({ error: 'Path is not a directory.' } as ApiTypes.ApiErrorResponse);
+        res.status(400).json({ code: 400, data: null, err: 'Path is not a directory.' });
         return;
       }
     } catch (error) {
-      res.status(400).json({ error: 'Path does not exist or is inaccessible.' } as ApiTypes.ApiErrorResponse);
+      res.status(400).json({ code: 400, data: null, err: 'Path does not exist or is inaccessible.' });
       return;
     }
 
     const currentPresets = await loadPresets();
     if (currentPresets.includes(newPresetPath)) {
-      res.status(409).json({ error: 'Preset already exists.' } as ApiTypes.ApiErrorResponse);
+      res.status(409).json({ code: 409, data: null, err: 'Preset already exists.' });
       return;
     }
 
     const updatedPresets = [...currentPresets, newPresetPath];
     await savePresets(updatedPresets);
-    res.json({ presets: updatedPresets, message: 'Preset added successfully.' } as ApiTypes.PresetMutationSuccessResponse);
+    res.status(201).json({ code: 201, data: { presets: updatedPresets, message: 'Preset added successfully.' }, err: null });
   }) as any);
 
   // Delete a preset
-  expressApp.delete('/api/presets', (async (req: Request<never, ApiTypes.PresetOperationResponse, ApiTypes.DeletePresetRequest>, res: Response<ApiTypes.PresetOperationResponse>) => {
+  expressApp.delete('/api/presets', (async (req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.DeletePresetRequest>, res: Response<ApiTypes.PresetMutationSuccessResponse>) => {
     const { path: pathToDelete }: ApiTypes.DeletePresetRequest = req.body;
 
     if (!pathToDelete || typeof pathToDelete !== 'string') {
-      res.status(400).json({ error: 'Invalid path provided for deletion.' } as ApiTypes.ApiErrorResponse);
+      res.status(400).json({ code: 400, data: null, err: 'Invalid path provided for deletion.' });
       return;
     }
 
     const currentPresets = await loadPresets();
     if (!currentPresets.includes(pathToDelete)) {
-      res.status(404).json({ error: 'Preset path not found.' } as ApiTypes.ApiErrorResponse);
+      res.status(404).json({ code: 404, data: null, err: 'Preset path not found.' });
       return;
     }
 
     const updatedPresets = currentPresets.filter(p => p !== pathToDelete);
     await savePresets(updatedPresets);
-    res.json({ presets: updatedPresets, message: 'Preset deleted successfully.' } as ApiTypes.PresetMutationSuccessResponse);
+    res.json({ code: 200, data: { presets: updatedPresets, message: 'Preset deleted successfully.' }, err: null });
   }) as any);
 
   // Set active directory and trigger playlist update in renderer
-  expressApp.post('/api/set-active-directory', (async (req: Request<never, ApiTypes.SetActiveDirectoryResponse, ApiTypes.SetActiveDirectoryRequest>, res: Response<ApiTypes.SetActiveDirectoryResponse>) => {
+  expressApp.post('/api/set-active-directory', (async (req: Request<never, ApiTypes.SetActiveDirectorySuccessResponse, ApiTypes.SetActiveDirectoryRequest>, res: Response<ApiTypes.SetActiveDirectorySuccessResponse>) => {
     const { path: directoryPath }: ApiTypes.SetActiveDirectoryRequest = req.body;
 
     if (!directoryPath || typeof directoryPath !== 'string') {
-      res.status(400).json({ error: 'Invalid directory path provided.' } as ApiTypes.ApiErrorResponse);
+      res.status(400).json({ code: 400, data: null, err: 'Invalid directory path provided.' });
       return;
     }
 
     try {
       const stats = await fs.stat(directoryPath);
       if (!stats.isDirectory()) {
-        res.status(400).json({ error: 'Provided path is not a directory.' } as ApiTypes.ApiErrorResponse);
+        res.status(400).json({ code: 400, data: null, err: 'Provided path is not a directory.' });
         return;
       }
     } catch (error) {
-      res.status(400).json({ error: 'Directory path does not exist or is inaccessible.' } as ApiTypes.ApiErrorResponse);
+      res.status(400).json({ code: 400, data: null, err: 'Directory path does not exist or is inaccessible.' });
       return;
     }
 
@@ -276,10 +276,10 @@ app.whenReady().then(() => {
     if (win) {
       win.webContents.send('main:updatePlaylist', videoFiles);
       console.log(`Sent main:updatePlaylist IPC with ${videoFiles.length} videos for path: ${directoryPath}`);
-      res.json({ message: `Active directory set to ${directoryPath}. Playlist updated.`, videoCount: videoFiles.length } as ApiTypes.SetActiveDirectorySuccessResponse);
+      res.json({ code: 200, data: { message: `Active directory set to ${directoryPath}. Playlist updated.`, videoCount: videoFiles.length }, err: null });
     } else {
       console.error('Main window (win) not available to send IPC message.');
-      res.status(500).json({ error: 'Main window not available to update playlist.' } as ApiTypes.ApiErrorResponse);
+      res.status(500).json({ code: 500, data: null, err: 'Main window not available to update playlist.' });
     }
   }) as any);
 

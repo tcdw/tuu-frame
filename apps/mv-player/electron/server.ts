@@ -3,10 +3,22 @@ import cors from "cors";
 import * as ApiTypes from "../src/shared-api-types.ts";
 import { loadPresets, savePresets, scanDirectoryForVideos } from "./functions.ts";
 import fs from "node:fs/promises";
-import { BrowserWindow } from "electron";
+import { BrowserWindow, app } from "electron";
+import {
+    initializeCredentials,
+    loadCredentials,
+    saveCredentials,
+    hashPassword,
+    comparePassword,
+    generateToken,
+    authenticateToken,
+    AuthenticatedRequest,
+    UserCredentials,
+} from "./auth";
 
 export function createServer(win: BrowserWindow) {
     const expressApp = express();
+    const userDataPath = app.getPath("userData");
 
     // CORS configuration
     const corsOptions = {
@@ -18,18 +30,145 @@ export function createServer(win: BrowserWindow) {
     expressApp.use(express.json()); // Middleware to parse JSON bodies
     const port = 3001;
 
+    // Initialize credentials on server startup
+    initializeCredentials(userDataPath).catch(err => {
+        console.error("Failed to initialize credentials:", err);
+        // Consider how to handle this error, e.g., prevent server start if critical
+    });
+
+    // --- Authentication Routes ---
+
+    // Login
+    expressApp.post("/auth/login", (async (req: Request, res: Response) => {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ code: 400, data: null, err: "Username and password are required." });
+        }
+
+        try {
+            const credentials = await loadCredentials(userDataPath);
+            if (!credentials || credentials.username !== username) {
+                return res.status(401).json({ code: 401, data: null, err: "Invalid username or password." });
+            }
+
+            const passwordMatch = await comparePassword(password, credentials.passwordHash);
+            if (!passwordMatch) {
+                return res.status(401).json({ code: 401, data: null, err: "Invalid username or password." });
+            }
+
+            const token = generateToken(credentials.username);
+            res.json({ code: 200, data: { token, message: "Login successful." }, err: null });
+        } catch (error) {
+            console.error("Login error:", error);
+            res.status(500).json({ code: 500, data: null, err: "Internal server error during login." });
+        }
+    }) as any);
+
+    // Logout (conceptual - JWT logout is primarily client-side)
+    expressApp.post("/auth/logout", authenticateToken, (_req: AuthenticatedRequest, res: Response) => {
+        res.json({ code: 200, data: { message: "Logout successful (client should clear token)." }, err: null });
+    });
+
+    // Change Credentials
+    expressApp.post("/auth/change-credentials", authenticateToken, (async (
+        req: AuthenticatedRequest,
+        res: Response,
+    ) => {
+        const { currentPassword, newUsername, newPassword } = req.body;
+        const currentUsernameFromToken = req.user?.username;
+
+        if (!currentUsernameFromToken) {
+            return res.status(403).json({ code: 403, data: null, err: "User not authenticated or token invalid." });
+        }
+
+        if (!currentPassword || (!newUsername && !newPassword)) {
+            return res.status(400).json({
+                code: 400,
+                data: null,
+                err: "Current password and either new username or new password are required.",
+            });
+        }
+
+        try {
+            const credentials = await loadCredentials(userDataPath);
+            if (!credentials || credentials.username !== currentUsernameFromToken) {
+                return res.status(401).json({ code: 401, data: null, err: "Credentials mismatch or user not found." });
+            }
+
+            const passwordMatch = await comparePassword(currentPassword, credentials.passwordHash);
+            if (!passwordMatch) {
+                return res.status(401).json({ code: 401, data: null, err: "Incorrect current password." });
+            }
+
+            let updatedUsername = credentials.username;
+            let updatedPasswordHash = credentials.passwordHash;
+            let usernameChanged = false;
+            let passwordChanged = false;
+
+            if (
+                newUsername &&
+                typeof newUsername === "string" &&
+                newUsername.trim() !== "" &&
+                newUsername.trim() !== credentials.username
+            ) {
+                updatedUsername = newUsername.trim();
+                usernameChanged = true;
+            }
+
+            if (newPassword && typeof newPassword === "string" && newPassword.trim() !== "") {
+                updatedPasswordHash = await hashPassword(newPassword.trim());
+                passwordChanged = true;
+            }
+
+            if (!usernameChanged && !passwordChanged) {
+                return res.status(200).json({ code: 200, data: { message: "No changes detected." }, err: null });
+            }
+
+            const updatedCredentials: UserCredentials = {
+                username: updatedUsername,
+                passwordHash: updatedPasswordHash,
+            };
+
+            await saveCredentials(userDataPath, updatedCredentials);
+
+            const responseData: { message: string; token?: string } = { message: "Credentials updated successfully." };
+
+            if (usernameChanged) {
+                responseData.message =
+                    "Username updated successfully. Please log in again with the new username to get a new token.";
+            } else if (passwordChanged) {
+                // Password changed, username same
+                const newToken = generateToken(updatedUsername);
+                responseData.token = newToken;
+                responseData.message = "Password updated successfully. New token issued.";
+            }
+
+            res.json({ code: 200, data: responseData, err: null });
+        } catch (error) {
+            console.error("Change credentials error:", error);
+            res.status(500).json({ code: 500, data: null, err: "Internal server error during credential change." });
+        }
+    }) as any);
+
+    // --- API Routes ---
+
+    // Ping route (unprotected)
     expressApp.get("/api/ping", (_req: Request, res: Response<ApiTypes.PingResponse>) => {
         res.json({ code: 200, data: { message: "pong" }, err: null });
     });
 
-    // Get all presets
-    expressApp.get("/api/presets", async (_req: Request, res: Response<ApiTypes.PresetsListResponse>) => {
+    // Get all presets (protected)
+    expressApp.get("/api/presets", authenticateToken, (async (
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.PresetsListResponse>,
+    ) => {
         const presets = await loadPresets();
         res.json({ code: 200, data: presets, err: null });
-    });
+    }) as any);
 
     // Add a new preset
-    expressApp.post("/api/presets", (async (
+    expressApp.post("/api/presets", authenticateToken, (async (
         req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.AddPresetRequest>,
         res: Response<ApiTypes.PresetMutationSuccessResponse>,
     ) => {
@@ -68,7 +207,7 @@ export function createServer(win: BrowserWindow) {
     }) as any);
 
     // Delete a preset
-    expressApp.delete("/api/presets", (async (
+    expressApp.delete("/api/presets", authenticateToken, (async (
         req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.DeletePresetRequest>,
         res: Response<ApiTypes.PresetMutationSuccessResponse>,
     ) => {
@@ -91,7 +230,7 @@ export function createServer(win: BrowserWindow) {
     }) as any);
 
     // Set active directory and trigger playlist update in renderer
-    expressApp.post("/api/set-active-directory", (async (
+    expressApp.post("/api/set-active-directory", authenticateToken, (async (
         req: Request<never, ApiTypes.SetActiveDirectorySuccessResponse, ApiTypes.SetActiveDirectoryRequest>,
         res: Response<ApiTypes.SetActiveDirectorySuccessResponse>,
     ) => {

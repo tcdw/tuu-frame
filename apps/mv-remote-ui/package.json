@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@tanstack/react-router": "^1.120.16",
     "@types/crypto-js": "^4.2.2",

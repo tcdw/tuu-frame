@@ -168,7 +168,7 @@ app.whenReady().then(() => {
     ) => {
         const { path: newPresetPath }: ApiTypes.AddPresetRequest = req.body;
 
-        if (!newPresetPath || typeof newPresetPath !== "string") {
+        if (!newPresetPath) {
             res.status(400).json({ code: 400, data: null, err: "Invalid path provided." });
             return;
         }
@@ -180,6 +180,7 @@ app.whenReady().then(() => {
                 return;
             }
         } catch (error) {
+            console.error(`[/api/presets] Error: ${error}`);
             res.status(400).json({ code: 400, data: null, err: "Path does not exist or is inaccessible." });
             return;
         }
@@ -206,7 +207,7 @@ app.whenReady().then(() => {
     ) => {
         const { path: pathToDelete }: ApiTypes.DeletePresetRequest = req.body;
 
-        if (!pathToDelete || typeof pathToDelete !== "string") {
+        if (!pathToDelete) {
             res.status(400).json({ code: 400, data: null, err: "Invalid path provided for deletion." });
             return;
         }
@@ -229,7 +230,7 @@ app.whenReady().then(() => {
     ) => {
         const { path: directoryPath }: ApiTypes.SetActiveDirectoryRequest = req.body;
 
-        if (!directoryPath || typeof directoryPath !== "string") {
+        if (!directoryPath) {
             res.status(400).json({ code: 400, data: null, err: "Invalid directory path provided." });
             return;
         }
@@ -241,6 +242,7 @@ app.whenReady().then(() => {
                 return;
             }
         } catch (error) {
+            console.error(`[/api/set-active-directory] Error: ${error}`);
             res.status(400).json({ code: 400, data: null, err: "Directory path does not exist or is inaccessible." });
             return;
         }

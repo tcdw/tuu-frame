@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { KeyRound, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { KeyRound, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 function ChangePasswordComponent() {
@@ -50,14 +50,15 @@ function ChangePasswordComponent() {
             setNewPassword("");
             setConfirmPassword("");
             if (result.message && result.message.includes("Please log in again")) {
-                setTimeout(() => navigate({ to: '/login', replace: true }), 3000);
+                setTimeout(() => navigate({ to: "/login", replace: true }), 3000);
             }
         } else {
             setError(result.error || "Failed to change password. Please check your details.");
         }
     };
 
-    if (auth.isLoading && !auth.isAuthenticated) { // Show loader only if not yet authenticated but loading
+    if (auth.isLoading && !auth.isAuthenticated) {
+        // Show loader only if not yet authenticated but loading
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -72,7 +73,10 @@ function ChangePasswordComponent() {
     return (
         <div className="container mx-auto py-8 flex flex-col items-center">
             <div className="w-full max-w-md mb-6">
-                <Link to="/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+                <Link
+                    to="/dashboard"
+                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
+                >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Dashboard
                 </Link>
@@ -82,9 +86,7 @@ function ChangePasswordComponent() {
                     <CardTitle className="flex items-center text-2xl">
                         <KeyRound className="mr-3 h-6 w-6 text-primary" /> Change Password
                     </CardTitle>
-                    <CardDescription>
-                        Update your password below. Make sure it's a strong one!
-                    </CardDescription>
+                    <CardDescription>Update your password below. Make sure it's a strong one!</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="grid gap-6">
@@ -129,15 +131,22 @@ function ChangePasswordComponent() {
                             </Alert>
                         )}
                         {successMessage && (
-                            <Alert variant="default" className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400">
+                            <Alert
+                                variant="default"
+                                className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400"
+                            >
                                 <CheckCircle2 className="h-4 w-4 text-green-500 dark:text-green-400" />
                                 <AlertTitle className="text-green-700 dark:text-green-500">Success</AlertTitle>
                                 <AlertDescription>{successMessage}</AlertDescription>
                             </Alert>
                         )}
-                        <Button type="submit" className="w-full" disabled={auth.isLoadingPasswordChange}> {/* Assuming isLoadingPasswordChange from AuthContext */}
+                        <Button type="submit" className="w-full" disabled={auth.isLoadingPasswordChange}>
+                            {" "}
+                            {/* Assuming isLoadingPasswordChange from AuthContext */}
                             {auth.isLoadingPasswordChange ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Changing...</>
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Changing...
+                                </>
                             ) : (
                                 "Change Password"
                             )}

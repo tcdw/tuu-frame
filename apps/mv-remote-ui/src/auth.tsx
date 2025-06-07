@@ -5,23 +5,38 @@ import { useNavigate } from "@tanstack/react-router";
 interface AuthContextType {
     isAuthenticated: boolean;
     username: string | null;
-    login: (user: string, pass: string) => Promise<boolean>;
-    logout: () => void;
-    changePassword: (user: string, oldPass: string, newPass: string) => Promise<boolean>;
+    login: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+    logout: () => Promise<void>;
+    changePassword: (currentPassword: string, newPassword: string, newUsername?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
     isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = "mv_remote_auth";
+const API_BASE_URL = "http://localhost:3001"; // mv-player server
+const JWT_STORAGE_KEY = "mv_remote_jwt_token";
 
-interface StoredAuthData {
+interface JwtPayload {
     username: string;
-    passwordHash: string; // In a real app, this would be a proper hash
+    iat?: number;
+    exp?: number;
 }
 
-// Simple 'hashing' for example purposes. DO NOT USE IN PRODUCTION.
-const simpleHash = (password: string) => `hashed_${password}`;
+// Helper to parse JWT (client-side, for display purposes like username)
+const parseJwt = (token: string): JwtPayload | null => {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload) as JwtPayload;
+    } catch (e) {
+        console.error("Failed to parse JWT", e);
+        return null;
+    }
+};
+
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,82 +45,125 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Initialize or load stored credentials
-        const storedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (storedAuth) {
-            try {
-                const authData: StoredAuthData = JSON.parse(storedAuth);
-                // For this example, we'll just assume if data exists, user was 'logged in'
-                // A real app would verify a session token with a backend
-                setUsername(authData.username);
+        const token = localStorage.getItem(JWT_STORAGE_KEY);
+        if (token) {
+            const decoded = parseJwt(token);
+            if (decoded && decoded.exp && decoded.exp * 1000 > Date.now()) {
+                setUsername(decoded.username);
                 setIsAuthenticated(true);
-            } catch (e) {
-                console.error("Failed to parse auth data from localStorage", e);
-                localStorage.removeItem(AUTH_STORAGE_KEY);
+            } else {
+                // Token exists but is invalid or expired
+                localStorage.removeItem(JWT_STORAGE_KEY);
+                setUsername(null);
+                setIsAuthenticated(false);
             }
-        } else {
-            // Initialize with default admin/admin if no data exists
-            const defaultAuth: StoredAuthData = {
-                username: "admin",
-                passwordHash: simpleHash("admin"),
-            };
-            localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(defaultAuth));
         }
         setIsLoading(false);
     }, []);
 
-    const login = async (user: string, pass: string): Promise<boolean> => {
+    const login = async (user: string, pass: string): Promise<{ success: boolean; error?: string }> => {
         setIsLoading(true);
-        const storedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (storedAuth) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: user, password: pass }),
+            });
+            const data = await response.json();
+
+            if (response.ok && data.data?.token) {
+                localStorage.setItem(JWT_STORAGE_KEY, data.data.token);
+                const decoded = parseJwt(data.data.token);
+                setUsername(decoded?.username || null);
+                setIsAuthenticated(true);
+                setIsLoading(false);
+                return { success: true };
+            } else {
+                setIsAuthenticated(false);
+                setUsername(null);
+                setIsLoading(false);
+                return { success: false, error: data.err || 'Login failed' };
+            }
+        } catch (error: any) {
+            console.error("Login API error:", error);
+            setIsAuthenticated(false);
+            setUsername(null);
+            setIsLoading(false);
+            return { success: false, error: error.message || 'Network error during login' };
+        }
+    };
+
+    const logout = async (): Promise<void> => {
+        setIsLoading(true);
+        const token = localStorage.getItem(JWT_STORAGE_KEY);
+        if (token) {
             try {
-                const authData: StoredAuthData = JSON.parse(storedAuth);
-                if (authData.username === user && authData.passwordHash === simpleHash(pass)) {
-                    setIsAuthenticated(true);
-                    setUsername(user);
-                    setIsLoading(false);
-                    return true;
+                const headers: HeadersInit = {};
+                const currentToken = localStorage.getItem(JWT_STORAGE_KEY);
+                if (currentToken) {
+                    headers['Authorization'] = `Bearer ${currentToken}`;
                 }
-            } catch (e) {
-                console.error("Error during login", e);
+                await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: headers,
+                });
+            } catch (error) {
+                console.error("Logout API error:", error); 
+                // Still proceed with client-side logout even if API call fails
             }
         }
+        localStorage.removeItem(JWT_STORAGE_KEY);
         setIsAuthenticated(false);
         setUsername(null);
         setIsLoading(false);
-        return false;
-    };
-
-    const logout = () => {
-        setIsAuthenticated(false);
-        setUsername(null);
-        // In a real app, you'd also clear session tokens, etc.
-        // For this example, we don't remove localStorage so login persists across refreshes if already logged in.
-        // To truly log out and require re-login, you might navigate them to /login and clear auth state more thoroughly.
         navigate({ to: "/login" });
     };
 
-    const changePassword = async (user: string, oldPass: string, newPass: string): Promise<boolean> => {
+    const changePassword = async (currentPassword: string, newPassword: string, newUsername?: string): Promise<{ success: boolean; error?: string; message?: string }> => {
         setIsLoading(true);
-        const storedAuth = localStorage.getItem(AUTH_STORAGE_KEY);
-        if (storedAuth) {
-            try {
-                const authData: StoredAuthData = JSON.parse(storedAuth);
-                if (authData.username === user && authData.passwordHash === simpleHash(oldPass)) {
-                    const updatedAuth: StoredAuthData = {
-                        ...authData,
-                        passwordHash: simpleHash(newPass),
-                    };
-                    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedAuth));
-                    setIsLoading(false);
-                    return true;
-                }
-            } catch (e) {
-                console.error("Error changing password", e);
+        const payload: { currentPassword: string; newPassword?: string; newUsername?: string } = { currentPassword };
+        if (newPassword) payload.newPassword = newPassword;
+        if (newUsername) payload.newUsername = newUsername;
+
+        try {
+            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            const currentToken = localStorage.getItem(JWT_STORAGE_KEY);
+            if (currentToken) {
+                headers['Authorization'] = `Bearer ${currentToken}`;
             }
+            const response = await fetch(`${API_BASE_URL}/auth/change-credentials`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload),
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                // If username changed, server asks to re-login, so clear local token.
+                // If only password changed, server might return a new token.
+                if (data.data?.message?.includes('Please log in again')) {
+                    localStorage.removeItem(JWT_STORAGE_KEY);
+                    setIsAuthenticated(false);
+                    setUsername(null);
+                } else if (data.data?.token) {
+                    localStorage.setItem(JWT_STORAGE_KEY, data.data.token);
+                    const decoded = parseJwt(data.data.token);
+                    setUsername(decoded?.username || null); // Username might have changed if newUsername was also sent
+                    setIsAuthenticated(true);
+                }
+                setIsLoading(false);
+                return { success: true, message: data.data?.message };
+            } else {
+                setIsLoading(false);
+                return { success: false, error: data.err || 'Failed to change credentials' };
+            }
+        } catch (error: any) {
+            console.error("Change credentials API error:", error);
+            setIsLoading(false);
+            return { success: false, error: error.message || 'Network error during credential change' };
         }
-        setIsLoading(false);
-        return false;
     };
 
     return (

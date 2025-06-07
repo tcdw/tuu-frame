@@ -37,6 +37,11 @@ export const Route = createFileRoute("/dashboard")({
 function DashboardComponent() {
     const auth = useAuth();
     const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await auth.logout(); // isLoading and navigation are handled within auth.logout
+    };
+
     const [presets, setPresets] = useState<UIPreset[]>([]);
     const [newPresetPath, setNewPresetPath] = useState("");
     const [activeDirectoryPath, setActiveDirectoryPath] = useState("");
@@ -159,7 +164,9 @@ function DashboardComponent() {
                     <Link to="/settings/change-password" style={{ marginRight: "10px" }}>
                         Change Password
                     </Link>
-                    <button onClick={auth.logout}>Logout</button>
+                    <button onClick={handleLogout} disabled={auth.isLoading}>
+                        {auth.isLoading ? 'Logging out...' : 'Logout'}
+                    </button>
                 </div>
             </div>
 

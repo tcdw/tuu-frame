@@ -21,11 +21,11 @@ function LoginComponent() {
             setError("Please enter both username and password.");
             return;
         }
-        const success = await auth.login(username, password);
-        if (success) {
+        const result = await auth.login(username, password);
+        if (result.success) {
             navigate({ to: "/dashboard" });
         } else {
-            setError("Invalid username or password.");
+            setError(result.error || "Login failed. Please check your credentials.");
         }
     };
 

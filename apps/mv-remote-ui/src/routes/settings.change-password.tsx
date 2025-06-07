@@ -34,20 +34,21 @@ function ChangePasswordComponent() {
             setError("New passwords do not match.");
             return;
         }
-        if (!auth.username) {
-            setError("User not found. Please log in again.");
-            return;
-        }
+        // The username is no longer passed; it's derived from the JWT on the server.
+        const result = await auth.changePassword(oldPassword, newPassword);
 
-        const success = await auth.changePassword(auth.username, oldPassword, newPassword);
-        if (success) {
-            setSuccessMessage("Password changed successfully!");
+        if (result.success) {
+            setSuccessMessage(result.message || "Password changed successfully!");
             setOldPassword("");
             setNewPassword("");
             setConfirmPassword("");
-            // Optionally navigate away or show a persistent success message
+            if (result.message && result.message.includes("Please log in again")) {
+                // Server might say this if username was changed (not implemented in this form yet)
+                // or if a re-login is strictly required for other reasons.
+                setTimeout(() => navigate({ to: '/login', replace: true }), 3000); 
+            }
         } else {
-            setError("Failed to change password. Check your old password.");
+            setError(result.error || "Failed to change password. Please check your details.");
         }
     };
 

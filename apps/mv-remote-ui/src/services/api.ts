@@ -10,6 +10,9 @@ interface ApiResponse<TData> {
     err?: string;
 }
 
+// JWT storage key (should match the one in auth.tsx)
+const JWT_STORAGE_KEY = "mv_remote_jwt_token";
+
 // Create an axios instance
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -17,6 +20,20 @@ const apiClient = axios.create({
         "Content-Type": "application/json",
     },
 });
+
+// Add a request interceptor to include the JWT token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem(JWT_STORAGE_KEY);
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 // Add a response interceptor
 apiClient.interceptors.response.use(

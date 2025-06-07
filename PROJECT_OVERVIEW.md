@@ -51,6 +51,8 @@ Located in the `apps/mv-player/` directory within the monorepo.
 ### Key Files:
 
 *   `electron/main.ts`: Electron main process logic, Express server setup, API endpoint definitions, preset management, IPC handling.
+*   `electron/functions.ts`: 放置常用的工具函数
+*   `electron/server.ts`: 放置 HTTP 服务器的业务逻辑
 *   `electron/preload.ts`: Exposes `window.electronAPI` to the renderer for secure IPC.
 *   `src/app.ts`: Renderer process logic (video element control, event handling, IPC listeners).
 *   `src/main.ts`: Entry point for the renderer process.

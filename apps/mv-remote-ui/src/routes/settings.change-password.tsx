@@ -77,7 +77,7 @@ function ChangePasswordComponent() {
                     to="/dashboard"
                     className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
                 >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    <ArrowLeft />
                     Back to Dashboard
                 </Link>
             </div>

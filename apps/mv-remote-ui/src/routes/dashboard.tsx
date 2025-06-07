@@ -146,11 +146,11 @@ function DashboardComponent() {
                         )}
                         <Link to="/settings/change-password">
                             <Button variant="outline" size="sm">
-                                <KeyRound className="mr-2 h-4 w-4" /> Change Password
+                                <KeyRound /> Change Password
                             </Button>
                         </Link>
                         <Button variant="outline" size="sm" onClick={handleLogout} disabled={auth.isLoading}>
-                            <LogOut className="mr-2 h-4 w-4" /> {auth.isLoading ? "Logging out..." : "Logout"}
+                            <LogOut /> {auth.isLoading ? "Logging out..." : "Logout"}
                         </Button>
                     </div>
                 </header>
@@ -203,14 +203,14 @@ function DashboardComponent() {
                                                     handleSetActiveDirectory(preset.path);
                                                 }}
                                             >
-                                                <Play className="mr-1.5 h-4 w-4" /> Play
+                                                <Play /> Play
                                             </Button>
                                             <Button
                                                 variant="destructive"
                                                 size="sm"
                                                 onClick={() => handleDeletePreset(preset.path)}
                                             >
-                                                <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                                                <Trash2 /> Delete
                                             </Button>
                                         </div>
                                     </li>
@@ -228,7 +228,7 @@ function DashboardComponent() {
                                 className="flex-grow"
                             />
                             <Button onClick={handleAddPreset}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
+                                <PlusCircle />
                                 Add Preset
                             </Button>
                         </div>

@@ -134,24 +134,23 @@ app.whenReady().then(async () => {
     await createServer(win);
 
     const devServerUrl = process.env.VITE_DEV_SERVER_URL;
-    const remoteUiUrl = 'http://localhost:3001';
 
-    let loadUrl: string;
     if (devServerUrl) {
-      // Development mode: Electron window loads mv-player's own UI from its Vite dev server
-      loadUrl = devServerUrl;
-      console.log(`[Electron Main] Development mode: Loading player UI from ${loadUrl}`);
-      win.webContents.openDevTools(); // Open DevTools for mv-player UI development
+      // Development: Load mv-player's UI from Vite dev server
+      console.log(`[Electron Main] Development mode: Loading player UI from ${devServerUrl}`);
+      win.loadURL(devServerUrl).catch(err => {
+        console.error(`[Electron Main] Failed to load dev server URL ${devServerUrl}:`, err);
+      });
+      win.webContents.openDevTools();
     } else {
-      // Production mode: Electron window loads mv-remote-ui from the Express server
-      loadUrl = remoteUiUrl;
-      console.log(`[Electron Main] Production mode: Loading remote UI from ${loadUrl}`);
+      // Production: Load mv-player's UI from its build output file
+      // __dirname in main.ts (packaged) is app.asar/dist-electron/
+      const playerUiIndexPath = path.join(__dirname, '..', 'dist', 'index.html');
+      console.log(`[Electron Main] Production mode: Loading player UI from ${playerUiIndexPath}`);
+      win.loadFile(playerUiIndexPath).catch(err => {
+        console.error(`[Electron Main] Failed to load file ${playerUiIndexPath}:`, err);
+      });
     }
-
-    win.loadURL(loadUrl).catch(err => {
-      console.error(`[Electron Main] Failed to load URL ${loadUrl}:`, err);
-      // TODO: Load a local error page or display error to user
-    });
 
   }).catch(e => {
     console.error("Failed to create window or server:", e);

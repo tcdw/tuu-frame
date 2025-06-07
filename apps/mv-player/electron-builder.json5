@@ -9,7 +9,8 @@
   },
   "files": [
     "dist",
-    "dist-electron"
+    "dist-electron",
+    "remote-ui-assets/**/*"
   ],
   "mac": {
     "target": [

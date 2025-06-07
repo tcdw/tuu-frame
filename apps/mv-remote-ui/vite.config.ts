@@ -5,9 +5,6 @@ import tailwindcssVite from "@tailwindcss/vite"; // Import the Tailwind CSS Vite
 
 // https://vite.dev/config/
 export default defineConfig({
-    resolve: {
-        dedupe: ['react', 'react-dom'],
-    },
     plugins: [
         react(),
         TanStackRouterVite(),

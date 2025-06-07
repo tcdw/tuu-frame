@@ -41,12 +41,21 @@ Located in the `apps/mv-player/` directory within the monorepo.
 *   **Build Tool**: Vite (orchestrated by Turborepo)
 *   **Package Manager**: pnpm (via workspaces)
 
+### Authentication System:
+
+*   **Single-User Authentication**: Implements a robust single-user authentication system using JWT (JSON Web Tokens) for authorization and bcrypt for password hashing.
+*   **Secure Endpoints**: All API endpoints (except for authentication routes) are protected and require a valid JWT.
+*   **Credential Management**: Supports login, logout, and changing credentials (username/password).
+
 ### API Endpoints (on `http://localhost:3001`):
 
 *   `GET /api/presets`: Retrieves the current list of preset folder paths.
 *   `POST /api/presets`: Adds a new folder path to the presets. Expects `{"path": "/your/folder/path"}`.
 *   `DELETE /api/presets`: Deletes a folder path from the presets. Expects `{"path": "/your/folder/path"}`.
 *   `POST /api/set-active-directory`: Sets the currently active directory for playback. Expects `{"path": "/your/folder/path"}`. Triggers playlist update and random playback in the Electron app.
+*   `POST /auth/login`: Authenticates the user. Expects `{"username": "user", "password": "pass"}`. Returns a JWT.
+*   `POST /auth/logout`: Invalidates the user's session (currently a placeholder on the backend, primary effect is client-side token removal).
+*   `POST /auth/change-credentials`: Allows changing username and/or password. Expects `{"currentPassword": "curr", "newPassword": "newP", "newUsername": "newU"}` (newPassword and newUsername are optional).
 
 ### Key Files:
 
@@ -69,7 +78,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   **Preset Management**: Remotely view, add, and delete preset folders by interacting with the `mv-player` API.
 *   **Playback Control**: Remotely set the active playback directory for the `mv-player`.
 *   **User Feedback**: Basic loading indicators and error messages.
-*   **Authentication**: Implements a login system with features for login, logout, and password changes. User state is managed via `AuthContext`.
+*   **Real Authentication**: Fully integrated with the `mv-player` backend's authentication system. Handles login, logout, and password changes by making API calls and managing JWTs (stored in `localStorage`). All protected API calls from the UI now correctly include the JWT for authorization.
 *   **Routing**: Uses TanStack Router for client-side routing, including protected routes.
 
 ### Technical Stack:
@@ -94,8 +103,8 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 ## 5. Current Status & Potential Next Steps
 
 *   **Monorepo Transition**: The project has been successfully converted to a monorepo structure using Turborepo and pnpm workspaces. This enhances project organization, build efficiency, and dependency management.
-*   **`mv-player`**: Core functionality for local video playback and API exposure is in place. React was removed from its renderer for simplicity.
-*   **`mv-remote-ui`**: Features preset management, playback directory control, a user authentication system (login, logout, change password), and uses TanStack Router for navigation with protected routes.
+*   **`mv-player`**: Core functionality for local video playback, API exposure, and a secure single-user authentication system (JWT/bcrypt) is in place. React was removed from its renderer for simplicity. A build issue related to `bcrypt` and `__dirname` in an ES module context has been resolved.
+*   **`mv-remote-ui`**: Features preset management and playback directory control. It's fully integrated with `mv-player`'s real authentication system, handling login, logout, password changes, and JWT management for all API calls. Uses TanStack Router for navigation with protected routes.
 *   **API Communication**: Functional between `mv-remote-ui` and `mv-player`.
 
 ### Potential Future Enhancements:
@@ -113,4 +122,4 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-06T22:17:33+08:00.
+This document was last updated on: 2025-06-07T17:50:20+08:00.

@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 dist-electron
+release
 *.local
 
 # Editor directories and files
@@ -23,3 +24,6 @@ dist-electron
 *.njsproj
 *.sln
 *.sw?
+
+# Copied remote UI assets
+remote-ui-assets/

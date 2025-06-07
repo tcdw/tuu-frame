@@ -7,13 +7,17 @@ interface AuthContextType {
     username: string | null;
     login: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => Promise<void>;
-    changePassword: (currentPassword: string, newPassword: string, newUsername?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+    changePassword: (
+        currentPassword: string,
+        newPassword: string,
+        newUsername?: string,
+    ) => Promise<{ success: boolean; error?: string; message?: string }>;
     isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = "http://localhost:3001"; // mv-player server
+const API_BASE_URL = "http://localhost:3001/api"; // mv-player server
 const JWT_STORAGE_KEY = "mv_remote_jwt_token";
 
 interface JwtPayload {
@@ -25,18 +29,22 @@ interface JwtPayload {
 // Helper to parse JWT (client-side, for display purposes like username)
 const parseJwt = (token: string): JwtPayload | null => {
     try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const base64Url = token.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+            atob(base64)
+                .split("")
+                .map(function (c) {
+                    return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+                })
+                .join(""),
+        );
         return JSON.parse(jsonPayload) as JwtPayload;
     } catch (e) {
         console.error("Failed to parse JWT", e);
         return null;
     }
 };
-
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -65,9 +73,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: 'POST',
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ username: user, password: pass }),
             });
@@ -84,14 +92,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setIsAuthenticated(false);
                 setUsername(null);
                 setIsLoading(false);
-                return { success: false, error: data.err || 'Login failed' };
+                return { success: false, error: data.err || "Login failed" };
             }
         } catch (error: any) {
             console.error("Login API error:", error);
             setIsAuthenticated(false);
             setUsername(null);
             setIsLoading(false);
-            return { success: false, error: error.message || 'Network error during login' };
+            return { success: false, error: error.message || "Network error during login" };
         }
     };
 
@@ -103,14 +111,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const headers: HeadersInit = {};
                 const currentToken = localStorage.getItem(JWT_STORAGE_KEY);
                 if (currentToken) {
-                    headers['Authorization'] = `Bearer ${currentToken}`;
+                    headers["Authorization"] = `Bearer ${currentToken}`;
                 }
                 await fetch(`${API_BASE_URL}/auth/logout`, {
-                    method: 'POST',
+                    method: "POST",
                     headers: headers,
                 });
             } catch (error) {
-                console.error("Logout API error:", error); 
+                console.error("Logout API error:", error);
                 // Still proceed with client-side logout even if API call fails
             }
         }
@@ -121,20 +129,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         navigate({ to: "/login" });
     };
 
-    const changePassword = async (currentPassword: string, newPassword: string, newUsername?: string): Promise<{ success: boolean; error?: string; message?: string }> => {
+    const changePassword = async (
+        currentPassword: string,
+        newPassword: string,
+        newUsername?: string,
+    ): Promise<{ success: boolean; error?: string; message?: string }> => {
         setIsLoading(true);
         const payload: { currentPassword: string; newPassword?: string; newUsername?: string } = { currentPassword };
         if (newPassword) payload.newPassword = newPassword;
         if (newUsername) payload.newUsername = newUsername;
 
         try {
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            const headers: HeadersInit = { "Content-Type": "application/json" };
             const currentToken = localStorage.getItem(JWT_STORAGE_KEY);
             if (currentToken) {
-                headers['Authorization'] = `Bearer ${currentToken}`;
+                headers["Authorization"] = `Bearer ${currentToken}`;
             }
             const response = await fetch(`${API_BASE_URL}/auth/change-credentials`, {
-                method: 'POST',
+                method: "POST",
                 headers: headers,
                 body: JSON.stringify(payload),
             });
@@ -143,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (response.ok) {
                 // If username changed, server asks to re-login, so clear local token.
                 // If only password changed, server might return a new token.
-                if (data.data?.message?.includes('Please log in again')) {
+                if (data.data?.message?.includes("Please log in again")) {
                     localStorage.removeItem(JWT_STORAGE_KEY);
                     setIsAuthenticated(false);
                     setUsername(null);
@@ -157,12 +169,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return { success: true, message: data.data?.message };
             } else {
                 setIsLoading(false);
-                return { success: false, error: data.err || 'Failed to change credentials' };
+                return { success: false, error: data.err || "Failed to change credentials" };
             }
         } catch (error: any) {
             console.error("Change credentials API error:", error);
             setIsLoading(false);
-            return { success: false, error: error.message || 'Network error during credential change' };
+            return { success: false, error: error.message || "Network error during credential change" };
         }
     };
 

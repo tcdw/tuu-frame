@@ -1,8 +1,10 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction, RequestHandler } from "express";
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import * as ApiTypes from "../src/shared-api-types.ts";
 import { loadPresets, savePresets, scanDirectoryForVideos } from "./functions.ts";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { BrowserWindow, app } from "electron";
 import {
     initializeCredentials,
@@ -16,9 +18,11 @@ import {
     UserCredentials,
 } from "./auth";
 
-export function createServer(win: BrowserWindow) {
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export function createServer(win: BrowserWindow): Promise<void> {
     const expressApp = express();
-    const userDataPath = app.getPath("userData");
+    const userDataPath = win.webContents.session.getStoragePath() || app.getPath("userData");
 
     // CORS configuration
     const corsOptions = {
@@ -28,6 +32,11 @@ export function createServer(win: BrowserWindow) {
     expressApp.use(cors(corsOptions));
 
     expressApp.use(express.json()); // Middleware to parse JSON bodies
+
+    // Serve mv-remote-ui static files from 'remote-ui-assets' directory
+    // This directory will contain the build output of mv-remote-ui
+    const remoteUiPath = path.join(__dirname, "..", "remote-ui-assets");
+    expressApp.use(express.static(remoteUiPath));
     const port = 3001;
 
     // Initialize credentials on server startup
@@ -39,7 +48,7 @@ export function createServer(win: BrowserWindow) {
     // --- Authentication Routes ---
 
     // Login
-    expressApp.post("/auth/login", (async (req: Request, res: Response) => {
+    expressApp.post("/api/auth/login", (async (req: Request, res: Response) => {
         const { username, password } = req.body;
 
         if (!username || !password) {
@@ -66,12 +75,12 @@ export function createServer(win: BrowserWindow) {
     }) as any);
 
     // Logout (conceptual - JWT logout is primarily client-side)
-    expressApp.post("/auth/logout", authenticateToken, (_req: AuthenticatedRequest, res: Response) => {
+    expressApp.post("/api/auth/logout", authenticateToken, (_req: AuthenticatedRequest, res: Response) => {
         res.json({ code: 200, data: { message: "Logout successful (client should clear token)." }, err: null });
     });
 
     // Change Credentials
-    expressApp.post("/auth/change-credentials", authenticateToken, (async (
+    expressApp.post("/api/auth/change-credentials", authenticateToken, (async (
         req: AuthenticatedRequest,
         res: Response,
     ) => {
@@ -272,7 +281,36 @@ export function createServer(win: BrowserWindow) {
         }
     }) as any);
 
-    expressApp.listen(port, () => {
-        console.log(`Express server listening on http://localhost:${port}`);
+    // SPA Fallback: For any GET request not handled by static files or API routes,
+    // serve index.html from the mv-remote-ui build.
+    // This must come AFTER all API routes and AFTER express.static for the remote UI.
+    const spaFallbackHandler: RequestHandler = (req: Request, res: Response, _next: NextFunction) => {
+        // If the request path starts with /api/ but wasn't caught by an API route,
+        // it's a 404 for an API endpoint.
+        if (req.path.startsWith("/api/")) {
+            res.status(404).json({ code: 404, data: null, err: "API endpoint not found." });
+            return;
+        }
+
+        // For all other GET requests, serve the main HTML file of the remote UI.
+        // This allows client-side routing to take over.
+        res.sendFile(path.join(remoteUiPath, "index.html"), (err) => {
+            if (err) {
+                const attemptedPath = path.resolve(path.join(remoteUiPath, "index.html"));
+                console.error(`Error sending SPA fallback file (index.html) from path: ${attemptedPath}`);
+                console.error("Detailed error object:", err);
+                if (!res.headersSent) {
+                    res.status(500).send("Error serving application core.");
+                }
+            }
+        });
+    };
+    expressApp.get("*", spaFallbackHandler);
+
+    return new Promise((resolve) => {
+        expressApp.listen(port, () => {
+            console.log(`Express server listening on http://localhost:${port}`);
+            resolve();
+        });
     });
 }

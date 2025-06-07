@@ -26,7 +26,7 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 
 let win: BrowserWindow | null;
 
-function createWindow() {
+function createWindow(): BrowserWindow {
     win = new BrowserWindow({
         icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
         webPreferences: {
@@ -40,12 +40,8 @@ function createWindow() {
         win?.webContents.send("main-process-message", new Date().toLocaleString());
     });
 
-    if (VITE_DEV_SERVER_URL) {
-        win.loadURL(VITE_DEV_SERVER_URL);
-    } else {
-        // win.loadFile('dist/index.html')
-        win.loadFile(path.join(RENDERER_DIST, "index.html"));
-    }
+    // URL loading will be handled after server starts
+    return win!;
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -66,7 +62,7 @@ app.on("activate", () => {
     }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     // Register 'mv-stream' protocol
     protocol.registerFileProtocol("mv-stream", (request, callback) => {
         const url = request.url.replace("mv-stream://", "");
@@ -134,6 +130,30 @@ app.whenReady().then(() => {
         return filePaths[0];
     });
 
-    createWindow();
-    createServer(win!);
-});
+    const win = createWindow();
+    await createServer(win);
+
+    const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+    const remoteUiUrl = 'http://localhost:3001';
+
+    let loadUrl: string;
+    if (devServerUrl) {
+      // Development mode: Electron window loads mv-player's own UI from its Vite dev server
+      loadUrl = devServerUrl;
+      console.log(`[Electron Main] Development mode: Loading player UI from ${loadUrl}`);
+      win.webContents.openDevTools(); // Open DevTools for mv-player UI development
+    } else {
+      // Production mode: Electron window loads mv-remote-ui from the Express server
+      loadUrl = remoteUiUrl;
+      console.log(`[Electron Main] Production mode: Loading remote UI from ${loadUrl}`);
+    }
+
+    win.loadURL(loadUrl).catch(err => {
+      console.error(`[Electron Main] Failed to load URL ${loadUrl}:`, err);
+      // TODO: Load a local error page or display error to user
+    });
+
+  }).catch(e => {
+    console.error("Failed to create window or server:", e);
+    app.quit();
+  });

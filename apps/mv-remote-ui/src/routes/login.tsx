@@ -2,6 +2,16 @@ import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../auth";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/login")({
     component: LoginComponent,
@@ -22,9 +32,8 @@ function LoginComponent() {
     const auth = useAuth();
     const navigate = useNavigate();
 
-    const onSubmit: SubmitHandler<LoginFormInputs> = async data => {
+    const onSubmit: SubmitHandler<LoginFormInputs> = async (data: LoginFormInputs) => {
         setApiError(null);
-        // Validation is now handled by react-hook-form, so direct checks for username/password are not needed here unless for extra logic.
         const result = await auth.login(data.username, data.password);
         if (result.success) {
             navigate({ to: "/dashboard" });
@@ -34,65 +43,57 @@ function LoginComponent() {
     };
 
     return (
-        <div
-            className="container"
-            style={{
-                maxWidth: "400px",
-                margin: "50px auto",
-                padding: "20px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-            }}
-        >
-            <h2>Login</h2>
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <div style={{ marginBottom: "15px" }}>
-                    <label htmlFor="username" style={{ display: "block", marginBottom: "5px" }}>
-                        Username
-                    </label>
-                    <input
-                        type="text"
-                        id="username"
-                        {...register("username", { required: "Username is required" })}
-                        style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-                        autoComplete="username"
-                    />
-                    {errors.username && (
-                        <p style={{ color: "red", marginTop: "5px", marginBottom: "0px" }}>{errors.username.message}</p>
-                    )}
-                </div>
-                <div style={{ marginBottom: "15px" }}>
-                    <label htmlFor="password" style={{ display: "block", marginBottom: "5px" }}>
-                        Password
-                    </label>
-                    <input
-                        type="password"
-                        id="password"
-                        {...register("password", { required: "Password is required" })}
-                        style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-                        autoComplete="current-password"
-                    />
-                    {errors.password && (
-                        <p style={{ color: "red", marginTop: "5px", marginBottom: "0px" }}>{errors.password.message}</p>
-                    )}
-                </div>
-                {apiError && <p style={{ color: "red", marginBottom: "15px" }}>{apiError}</p>}
-                <button
-                    type="submit"
-                    disabled={auth.isLoading}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor: "#007bff",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                    }}
-                >
-                    {auth.isLoading ? "Logging in..." : "Login"}
-                </button>
-            </form>
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+            <Card className="w-full max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-2xl">Login</CardTitle>
+                    <CardDescription>
+                        Enter your username and password to access your account.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="username">Username</Label>
+                            <Input
+                                id="username"
+                                type="text"
+                                placeholder="your_username"
+                                autoComplete="username"
+                                {...register("username", { required: "Username is required" })}
+                            />
+                            {errors.username && (
+                                <p className="text-sm text-destructive">{errors.username.message}</p>
+                            )}
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                placeholder="••••••••"
+                                autoComplete="current-password"
+                                {...register("password", { required: "Password is required" })}
+                            />
+                            {errors.password && (
+                                <p className="text-sm text-destructive">{errors.password.message}</p>
+                            )}
+                        </div>
+                        {apiError && (
+                            <p className="text-sm text-destructive">{apiError}</p>
+                        )}
+                        <Button type="submit" className="w-full" disabled={auth.isLoading}>
+                            {auth.isLoading ? "Logging in..." : "Login"}
+                        </Button>
+                    </form>
+                </CardContent>
+                {/* <CardFooter>
+                    <p className="text-xs text-muted-foreground">
+                        New user? <a href="/register" className="underline">Sign up</a>
+                    </p>
+                </CardFooter> */}
+            </Card>
         </div>
     );
 }
+

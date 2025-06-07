@@ -1,5 +1,6 @@
 import * as ApiTypes from "../../../mv-player/src/shared-api-types";
 import { apiClient } from "../utils/request";
+import HmacSHA512 from "crypto-js/hmac-sha512";
 
 // Interface for Preset objects used within the UI (App.tsx)
 // The API for GET /presets currently returns string[] (paths)
@@ -55,3 +56,52 @@ export async function setActiveDirectory(path: string): Promise<ApiTypes.SetActi
         ApiTypes.SetActiveDirectorySuccessData
     >("/set-active-directory", { path } as ApiTypes.SetActiveDirectoryRequest);
 }
+
+// --- Authentication Related API Calls ---
+
+async function getPublicSalt(): Promise<string> {
+    const response = await apiClient.get<ApiTypes.PublicSaltResponse, ApiTypes.PublicSaltData>("/auth/public-salt");
+    return response.publicSalt;
+}
+
+function clientSideHash(password: string, salt: string): string {
+    return HmacSHA512(password, salt).toString();
+}
+
+export async function loginUser(credentials: ApiTypes.LoginRequest): Promise<ApiTypes.LoginSuccessData> {
+    const publicSalt = await getPublicSalt();
+    const clientHashedPassword = clientSideHash(credentials.password, publicSalt);
+
+    const apiLoginPayload: ApiTypes.ApiLoginPayload = {
+        username: credentials.username,
+        clientHashedPassword: clientHashedPassword,
+    };
+
+    return apiClient.post<
+        ApiTypes.LoginResponse, // This is ApiResponse<LoginSuccessData>
+        ApiTypes.LoginSuccessData
+    >("/auth/login", apiLoginPayload);
+}
+
+export async function changePasswordApi(payload: ApiTypes.ChangeCredentialsRequest): Promise<ApiTypes.ChangeCredentialsSuccessData> {
+    const publicSalt = await getPublicSalt();
+
+    const clientHashedCurrentPassword = clientSideHash(payload.currentPassword, publicSalt);
+    let clientHashedNewPassword: string | undefined;
+    if (payload.newPassword) {
+        clientHashedNewPassword = clientSideHash(payload.newPassword, publicSalt);
+    }
+
+    const apiChangePasswordPayload: ApiTypes.ApiChangeCredentialsPayload = {
+        currentClientHashedPassword: clientHashedCurrentPassword,
+        newUsername: payload.newUsername,
+        newClientHashedPassword: clientHashedNewPassword,
+    };
+    
+    return apiClient.post<
+        ApiTypes.ChangeCredentialsResponse, // This is ApiResponse<ChangeCredentialsSuccessData>
+        ApiTypes.ChangeCredentialsSuccessData
+    >("/auth/change-credentials", apiChangePasswordPayload);
+}
+
+// The existing setActiveDirectory function was here. It's defined earlier in the file now.

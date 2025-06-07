@@ -49,9 +49,12 @@ Located in the `apps/mv-player/` directory within the monorepo.
 
 ### Authentication System:
 
-*   **Single-User Authentication**: Implements a robust single-user authentication system using JWT (JSON Web Tokens) for authorization and bcrypt for password hashing.
-*   **Secure Endpoints**: All API endpoints (except for authentication routes) are protected and require a valid JWT.
-*   **Credential Management**: Supports login, logout, and changing credentials (username/password).
+*   **Enhanced Single-User Authentication**: Implements a robust single-user authentication system featuring:
+    *   **Client-Side Hashing**: Passwords are first hashed on the client-side (`mv-remote-ui`) using HMAC-SHA512 with a server-provided public salt (obtained from `/api/auth/public-salt`).
+    *   **Server-Side Hashing**: The client-hashed password is then further hashed on the server-side using bcrypt.
+    *   **JWT (JSON Web Tokens)**: Used for authorization.
+*   **Secure Endpoints**: All API endpoints (except for authentication and public salt routes) are protected and require a valid JWT.
+*   **Credential Management**: Supports login, logout, and changing credentials (username/password) with the enhanced hashing scheme.
 
 ### API Endpoints (on `http://localhost:15678`):
 
@@ -59,9 +62,10 @@ Located in the `apps/mv-player/` directory within the monorepo.
 *   `POST /api/presets`: Adds a new folder path to the presets. Expects `{"path": "/your/folder/path"}`.
 *   `DELETE /api/presets`: Deletes a folder path from the presets. Expects `{"path": "/your/folder/path"}`.
 *   `POST /api/set-active-directory`: Sets the currently active directory for playback. Expects `{"path": "/your/folder/path"}`. Triggers playlist update and random playback in the Electron app.
-*   `POST /auth/login`: Authenticates the user. Expects `{"username": "user", "password": "pass"}`. Returns a JWT.
-*   `POST /auth/logout`: Invalidates the user's session (currently a placeholder on the backend, primary effect is client-side token removal).
-*   `POST /auth/change-credentials`: Allows changing username and/or password. Expects `{"currentPassword": "curr", "newPassword": "newP", "newUsername": "newU"}` (newPassword and newUsername are optional).
+*   `GET /api/auth/public-salt`: Retrieves the public salt required for client-side password hashing.
+*   `POST /api/auth/login`: Authenticates the user. Expects `{"username": "user", "clientHashedPassword": "hashedPass"}`. Returns a JWT.
+*   `POST /api/auth/logout`: Invalidates the user's session (currently a placeholder on the backend, primary effect is client-side token removal).
+*   `POST /api/auth/change-credentials`: Allows changing username and/or password. Expects `{"currentClientHashedPassword": "currHashed", "newClientHashedPassword": "newHashedP", "newUsername": "newU"}` (newClientHashedPassword and newUsername are optional).
 
 ### Key Files:
 
@@ -85,7 +89,10 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   **Preset Management**: Remotely view, add, and delete preset folders by interacting with the `mv-player` API.
 *   **Playback Control**: Remotely set the active playback directory for the `mv-player`.
 *   **User Feedback**: Basic loading indicators and error messages.
-*   **Real Authentication**: Fully integrated with the `mv-player` backend's authentication system. Handles login, logout, and password changes by making API calls and managing JWTs (stored in `localStorage`). All protected API calls from the UI now correctly include the JWT for authorization.
+*   **Real Authentication with Client-Side Hashing**: Fully integrated with the `mv-player` backend's enhanced authentication system.
+    *   Performs client-side HMAC-SHA512 hashing of passwords using a server-provided public salt before sending credentials.
+    *   Handles login, logout, and password changes by making API calls (using client-hashed passwords) and managing JWTs (stored in `localStorage`).
+    *   All protected API calls from the UI correctly include the JWT for authorization.
 *   **Routing**: Uses TanStack Router for client-side routing, including protected routes.
 
 ### Technical Stack:
@@ -111,7 +118,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 
 *   **Monorepo Transition**: The project has been successfully converted to a monorepo structure using Turborepo and pnpm workspaces. This enhances project organization, build efficiency, and dependency management.
 *   **`mv-player` & `mv-remote-ui` Integration**: The system is now fully functional with `mv-player` serving its own UI in the Electron window and simultaneously serving the `mv-remote-ui` via an embedded Express server on port `15678` (accessible on the LAN). This setup works correctly in both development (Vite dev servers, flexible CORS) and production (packaged assets, stricter same-origin policy for Express server). Packaging via `electron-builder` (configured in `electron-builder.json5`) correctly includes all necessary assets (`mv-player`'s `dist/`, `dist-electron/`, and `remote-ui-assets/`).
-*   **Authentication**: Robust single-user authentication (JWT/bcrypt) is implemented for the API, used by `mv-remote-ui`.
+*   **Authentication**: Enhanced single-user authentication is implemented. This includes client-side HMAC-SHA512 password hashing (using a server-provided public salt) in `mv-remote-ui` before transmission, followed by server-side bcrypt hashing in `mv-player`. JWTs are used for API authorization.
 *   **Monorepo Structure**: Successfully managed by Turborepo and pnpm workspaces.
 
 ### Potential Future Enhancements:
@@ -130,4 +137,4 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-07T22:00:27+08:00.
+This document was last updated on: 2025-06-07T23:00:53+08:00.

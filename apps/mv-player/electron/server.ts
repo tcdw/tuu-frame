@@ -16,6 +16,7 @@ import {
     authenticateToken,
     AuthenticatedRequest,
     UserCredentials,
+    getPublicSalt, // Added
 } from "./auth";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,12 +51,24 @@ export function createServer(win: BrowserWindow): Promise<void> {
 
     // --- Authentication Routes ---
 
+    // Get Public Salt (for client-side password hashing)
+    expressApp.get("/api/auth/public-salt", (async (_req: Request, res: Response) => {
+        try {
+            const salt = await getPublicSalt(userDataPath);
+            res.json({ code: 200, data: { publicSalt: salt }, err: null });
+        } catch (error) {
+            console.error("Error fetching public salt:", error);
+            res.status(500).json({ code: 500, data: null, err: "Internal server error fetching public salt." });
+        }
+    }) as any);
+
+
     // Login
     expressApp.post("/api/auth/login", (async (req: Request, res: Response) => {
-        const { username, password } = req.body;
+        const { username, clientHashedPassword } = req.body;
 
-        if (!username || !password) {
-            return res.status(400).json({ code: 400, data: null, err: "Username and password are required." });
+        if (!username || !clientHashedPassword) {
+            return res.status(400).json({ code: 400, data: null, err: "Username and client-hashed password are required." });
         }
 
         try {
@@ -64,7 +77,9 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 return res.status(401).json({ code: 401, data: null, err: "Invalid username or password." });
             }
 
-            const passwordMatch = await comparePassword(password, credentials.passwordHash);
+            // The stored passwordHash is already a bcrypt hash of a client-hashed password.
+            // So, we compare the incoming clientHashedPassword against it.
+            const passwordMatch = await comparePassword(clientHashedPassword, credentials.passwordHash);
             if (!passwordMatch) {
                 return res.status(401).json({ code: 401, data: null, err: "Invalid username or password." });
             }
@@ -87,76 +102,50 @@ export function createServer(win: BrowserWindow): Promise<void> {
         req: AuthenticatedRequest,
         res: Response,
     ) => {
-        const { currentPassword, newUsername, newPassword } = req.body;
+        const { currentClientHashedPassword, newUsername, newClientHashedPassword } = req.body;
         const currentUsernameFromToken = req.user?.username;
 
         if (!currentUsernameFromToken) {
             return res.status(403).json({ code: 403, data: null, err: "User not authenticated or token invalid." });
         }
 
-        if (!currentPassword || (!newUsername && !newPassword)) {
+        if (!currentClientHashedPassword || (!newUsername && !newClientHashedPassword)) {
             return res.status(400).json({
                 code: 400,
                 data: null,
-                err: "Current password and either new username or new password are required.",
+                err: "Current client-hashed password and either new username or new client-hashed password are required.",
             });
         }
 
         try {
             const credentials = await loadCredentials(userDataPath);
             if (!credentials || credentials.username !== currentUsernameFromToken) {
-                return res.status(401).json({ code: 401, data: null, err: "Credentials mismatch or user not found." });
+                return res.status(404).json({ code: 404, data: null, err: "User credentials not found." });
             }
 
-            const passwordMatch = await comparePassword(currentPassword, credentials.passwordHash);
+            const passwordMatch = await comparePassword(currentClientHashedPassword, credentials.passwordHash);
             if (!passwordMatch) {
                 return res.status(401).json({ code: 401, data: null, err: "Incorrect current password." });
             }
 
-            let updatedUsername = credentials.username;
-            let updatedPasswordHash = credentials.passwordHash;
-            let usernameChanged = false;
-            let passwordChanged = false;
+            const updatedCredentials: UserCredentials = { ...credentials };
 
-            if (
-                newUsername &&
-                typeof newUsername === "string" &&
-                newUsername.trim() !== "" &&
-                newUsername.trim() !== credentials.username
-            ) {
-                updatedUsername = newUsername.trim();
-                usernameChanged = true;
+            if (newUsername && typeof newUsername === "string" && newUsername.trim() !== "") {
+                updatedCredentials.username = newUsername.trim();
             }
 
-            if (newPassword && typeof newPassword === "string" && newPassword.trim() !== "") {
-                updatedPasswordHash = await hashPassword(newPassword.trim());
-                passwordChanged = true;
+            if (newClientHashedPassword && typeof newClientHashedPassword === "string" && newClientHashedPassword.trim() !== "") {
+                // The newClientHashedPassword is what we bcrypt and store
+                updatedCredentials.passwordHash = await hashPassword(newClientHashedPassword.trim());
             }
-
-            if (!usernameChanged && !passwordChanged) {
-                return res.status(200).json({ code: 200, data: { message: "No changes detected." }, err: null });
-            }
-
-            const updatedCredentials: UserCredentials = {
-                username: updatedUsername,
-                passwordHash: updatedPasswordHash,
-            };
 
             await saveCredentials(userDataPath, updatedCredentials);
 
-            const responseData: { message: string; token?: string } = { message: "Credentials updated successfully." };
-
-            if (usernameChanged) {
-                responseData.message =
-                    "Username updated successfully. Please log in again with the new username to get a new token.";
-            } else if (passwordChanged) {
-                // Password changed, username same
-                const newToken = generateToken(updatedUsername);
-                responseData.token = newToken;
-                responseData.message = "Password updated successfully. New token issued.";
-            }
-
-            res.json({ code: 200, data: responseData, err: null });
+            // If username changed, the client's current JWT will still be valid for the old username until it expires.
+            // The client will need to log in again to get a JWT for the new username.
+            // For this application, simply returning a success message is sufficient.
+            // A more advanced system might implement token revocation or automatically issue a new token.
+            res.json({ code: 200, data: { message: "Credentials updated successfully. Please log in again if username was changed." }, err: null });
         } catch (error) {
             console.error("Change credentials error:", error);
             res.status(500).json({ code: 500, data: null, err: "Internal server error during credential change." });

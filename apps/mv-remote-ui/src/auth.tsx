@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { API_BASE_URL } from "./utils/request.ts";
+import * as api from "./services/api";
+import type { LoginRequest, ChangeCredentialsRequest } from "../../mv-player/src/shared-api-types";
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -72,55 +73,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = async (user: string, pass: string): Promise<{ success: boolean; error?: string }> => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ username: user, password: pass }),
-            });
-            const data = await response.json();
+            const loginPayload: LoginRequest = { username: user, password: pass };
+            const data = await api.loginUser(loginPayload); // loginUser now returns LoginSuccessData or throws
 
-            if (response.ok && data.data?.token) {
-                localStorage.setItem(JWT_STORAGE_KEY, data.data.token);
-                const decoded = parseJwt(data.data.token);
-                setUsername(decoded?.username || null);
-                setIsAuthenticated(true);
-                setIsLoading(false);
-                return { success: true };
-            } else {
-                setIsAuthenticated(false);
-                setUsername(null);
-                setIsLoading(false);
-                return { success: false, error: data.err || "Login failed" };
-            }
+            localStorage.setItem(JWT_STORAGE_KEY, data.token);
+            const decoded = parseJwt(data.token);
+            setUsername(decoded?.username || null);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return { success: true };
         } catch (error: any) {
-            console.error("Login API error:", error);
+            console.error("Login error in AuthProvider:", error);
             setIsAuthenticated(false);
             setUsername(null);
             setIsLoading(false);
-            return { success: false, error: error.message || "Network error during login" };
+            // error.message comes from apiClient's error handling
+            return { success: false, error: error.message || "Login failed" };
         }
     };
 
     const logout = async (): Promise<void> => {
         setIsLoading(true);
-        const token = localStorage.getItem(JWT_STORAGE_KEY);
-        if (token) {
-            try {
-                const headers: HeadersInit = {};
-                const currentToken = localStorage.getItem(JWT_STORAGE_KEY);
-                if (currentToken) {
-                    headers["Authorization"] = `Bearer ${currentToken}`;
-                }
-                await fetch(`${API_BASE_URL}/auth/logout`, {
-                    method: "POST",
-                    headers: headers,
-                });
-            } catch (error) {
-                console.error("Logout API error:", error);
-                // Still proceed with client-side logout even if API call fails
+        // Note: The actual API call for logout is best-effort.
+        // If you have a specific api.logoutUser() function, you can call it here.
+        // For now, we'll keep the client-side token removal as the primary mechanism.
+        // Consider adding an api.logoutUser() in services/api.ts if server-side session invalidation is critical.
+        try {
+            const token = localStorage.getItem(JWT_STORAGE_KEY);
+            if (token) {
+                // Example: await api.logoutUser(); // If you implement this
+                // For now, just logging out locally
             }
+        } catch (error) {
+            console.error("Logout API error (if implemented):", error);
         }
         localStorage.removeItem(JWT_STORAGE_KEY);
         setIsAuthenticated(false);
@@ -131,50 +116,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const changePassword = async (
         currentPassword: string,
-        newPassword: string,
+        newPassword: string, // Kept as string, can be empty if not changing password
         newUsername?: string,
     ): Promise<{ success: boolean; error?: string; message?: string }> => {
         setIsLoading(true);
-        const payload: { currentPassword: string; newPassword?: string; newUsername?: string } = { currentPassword };
-        if (newPassword) payload.newPassword = newPassword;
-        if (newUsername) payload.newUsername = newUsername;
+
+        const changePayload: ChangeCredentialsRequest = {
+            currentPassword,
+            ...(newPassword && { newPassword }), // Add if newPassword is not empty
+            ...(newUsername && { newUsername }), // Add if newUsername is not empty
+        };
 
         try {
-            const headers: HeadersInit = { "Content-Type": "application/json" };
-            const currentToken = localStorage.getItem(JWT_STORAGE_KEY);
-            if (currentToken) {
-                headers["Authorization"] = `Bearer ${currentToken}`;
-            }
-            const response = await fetch(`${API_BASE_URL}/auth/change-credentials`, {
-                method: "POST",
-                headers: headers,
-                body: JSON.stringify(payload),
-            });
-            const data = await response.json();
+            const data = await api.changePasswordApi(changePayload); // changePasswordApi returns ChangeCredentialsSuccessData
 
-            if (response.ok) {
-                // If username changed, server asks to re-login, so clear local token.
-                // If only password changed, server might return a new token.
-                if (data.data?.message?.includes("Please log in again")) {
-                    localStorage.removeItem(JWT_STORAGE_KEY);
-                    setIsAuthenticated(false);
-                    setUsername(null);
-                } else if (data.data?.token) {
-                    localStorage.setItem(JWT_STORAGE_KEY, data.data.token);
-                    const decoded = parseJwt(data.data.token);
-                    setUsername(decoded?.username || null); // Username might have changed if newUsername was also sent
-                    setIsAuthenticated(true);
-                }
-                setIsLoading(false);
-                return { success: true, message: data.data?.message };
+            // If username changed, server asks to re-login, so clear local token.
+            // The server message 'Please log in again with your new credentials.' indicates username change.
+            if (data.message?.includes("Please log in again")) {
+                localStorage.removeItem(JWT_STORAGE_KEY);
+                setIsAuthenticated(false);
+                setUsername(null);
+                // Optionally navigate to login: navigate({ to: "/login" });
+            } else if (data.token) {
+                // Token is returned if only password changed (username unchanged)
+                localStorage.setItem(JWT_STORAGE_KEY, data.token);
+                const decoded = parseJwt(data.token);
+                // Username should be the same as before if only password changed,
+                // but if newUsername was part of a successful non-re-login flow (server logic dependent),
+                // this would update it.
+                setUsername(decoded?.username || username); // Keep old username if token doesn't yield one
+                setIsAuthenticated(true);
             } else {
-                setIsLoading(false);
-                return { success: false, error: data.err || "Failed to change credentials" };
+                // If only username changed and server didn't ask to re-login (and no new token)
+                // or if only password changed but server didn't issue a new token (unlikely for this setup)
+                // We might need to re-fetch user info or re-evaluate state.
+                // For now, assume if username changed, re-login is required.
+                // If only password changed, a new token should be issued.
+                // If newUsername was provided and successful, update local username state if not re-logging in.
+                if (newUsername && !data.message?.includes("Please log in again")) {
+                    setUsername(newUsername);
+                }
             }
-        } catch (error: any) {
-            console.error("Change credentials API error:", error);
             setIsLoading(false);
-            return { success: false, error: error.message || "Network error during credential change" };
+            return { success: true, message: data.message };
+        } catch (error: any) {
+            console.error("Change credentials error in AuthProvider:", error);
+            setIsLoading(false);
+            return { success: false, error: error.message || "Failed to change credentials" };
         }
     };
 

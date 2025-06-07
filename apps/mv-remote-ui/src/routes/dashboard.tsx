@@ -4,18 +4,10 @@ import { useAuth } from "../auth";
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from "../services/api";
 import type { UIPreset } from "../services/api";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { LogOut, KeyRound, Trash2, Play, PlusCircle, Loader2, AlertCircle, FolderOpen, ListVideo } from 'lucide-react';
+import { LogOut, KeyRound, Trash2, Play, PlusCircle, Loader2, AlertCircle, FolderOpen, ListVideo } from "lucide-react";
 
 // Helper to derive a name from a path
 const pathToName = (path: string): string => {
@@ -52,7 +44,8 @@ function DashboardComponent() {
     }, [auth.isLoading, auth.isAuthenticated, navigate]);
 
     useEffect(() => {
-        if (auth.isAuthenticated) { // Only fetch if authenticated
+        if (auth.isAuthenticated) {
+            // Only fetch if authenticated
             const fetchInitialPresets = async () => {
                 try {
                     setLoadingPresets(true);
@@ -103,7 +96,7 @@ function DashboardComponent() {
         try {
             setError(null);
             const updatedPaths = await deletePreset(pathToDelete);
-            const uiPresets = updatedPaths.map(path => ({ path, name: pathToName(path) }));
+            const uiPresets = updatedPaths.presets.map(path => ({ path, name: pathToName(path) }));
             setPresets(uiPresets);
         } catch (err) {
             console.error("Failed to delete preset:", err);
@@ -146,14 +139,18 @@ function DashboardComponent() {
                 <header className="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b">
                     <h1 className="text-3xl font-bold text-foreground mb-4 sm:mb-0">MV Player Remote</h1>
                     <div className="flex items-center space-x-2 sm:space-x-4">
-                        {auth.username && <span className="text-sm text-muted-foreground hidden sm:inline">Welcome, {auth.username}!</span>}
+                        {auth.username && (
+                            <span className="text-sm text-muted-foreground hidden sm:inline">
+                                Welcome, {auth.username}!
+                            </span>
+                        )}
                         <Link to="/settings/change-password">
                             <Button variant="outline" size="sm">
                                 <KeyRound className="mr-2 h-4 w-4" /> Change Password
                             </Button>
                         </Link>
-                        <Button variant="outline" size="sm" onClick={handleLogout} disabled={auth.isLoadingLogout}>
-                            <LogOut className="mr-2 h-4 w-4" /> {auth.isLoadingLogout ? "Logging out..." : "Logout"}
+                        <Button variant="outline" size="sm" onClick={handleLogout} disabled={auth.isLoading}>
+                            <LogOut className="mr-2 h-4 w-4" /> {auth.isLoading ? "Logging out..." : "Logout"}
                         </Button>
                     </div>
                 </header>
@@ -168,8 +165,13 @@ function DashboardComponent() {
 
                 <Card className="mb-8">
                     <CardHeader>
-                        <CardTitle className="flex items-center"><ListVideo className="mr-2 h-5 w-5 text-primary"/>Preset Folders</CardTitle>
-                        <CardDescription>Manage your saved preset folders. Click play to set as active directory.</CardDescription>
+                        <CardTitle className="flex items-center">
+                            <ListVideo className="mr-2 h-5 w-5 text-primary" />
+                            Preset Folders
+                        </CardTitle>
+                        <CardDescription>
+                            Manage your saved preset folders. Click play to set as active directory.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {loadingPresets ? (
@@ -178,20 +180,36 @@ function DashboardComponent() {
                                 <p className="text-muted-foreground">Loading presets...</p>
                             </div>
                         ) : presets.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4 text-center">No presets saved yet. Add one below.</p>
+                            <p className="text-sm text-muted-foreground py-4 text-center">
+                                No presets saved yet. Add one below.
+                            </p>
                         ) : (
                             <ul className="space-y-3">
                                 {presets.map(preset => (
-                                    <li key={preset.path} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md hover:bg-muted/50 transition-colors">
+                                    <li
+                                        key={preset.path}
+                                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md hover:bg-muted/50 transition-colors"
+                                    >
                                         <div className="mb-2 sm:mb-0">
                                             <p className="font-medium text-foreground">{preset.name}</p>
                                             <p className="text-xs text-muted-foreground">{preset.path}</p>
                                         </div>
                                         <div className="flex space-x-2 self-end sm:self-center">
-                                            <Button variant="outline" size="sm" onClick={() => { setActiveDirectoryPath(preset.path); handleSetActiveDirectory(preset.path);}}>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setActiveDirectoryPath(preset.path);
+                                                    handleSetActiveDirectory(preset.path);
+                                                }}
+                                            >
                                                 <Play className="mr-1.5 h-4 w-4" /> Play
                                             </Button>
-                                            <Button variant="destructive" size="sm" onClick={() => handleDeletePreset(preset.path)}>
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDeletePreset(preset.path)}
+                                            >
                                                 <Trash2 className="mr-1.5 h-4 w-4" /> Delete
                                             </Button>
                                         </div>
@@ -209,14 +227,20 @@ function DashboardComponent() {
                                 placeholder="Enter absolute path for new preset"
                                 className="flex-grow"
                             />
-                            <Button onClick={handleAddPreset}><PlusCircle className="mr-2 h-4 w-4"/>Add Preset</Button>
+                            <Button onClick={handleAddPreset}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Preset
+                            </Button>
                         </div>
                     </CardFooter>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center"><FolderOpen className="mr-2 h-5 w-5 text-primary"/>Set Active Directory</CardTitle>
+                        <CardTitle className="flex items-center">
+                            <FolderOpen className="mr-2 h-5 w-5 text-primary" />
+                            Set Active Directory
+                        </CardTitle>
                         <CardDescription>Manually enter a path or select a preset to start playback.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -228,7 +252,12 @@ function DashboardComponent() {
                                 placeholder="Enter absolute path or click 'Play' on a preset"
                                 className="flex-grow"
                             />
-                            <Button onClick={() => handleSetActiveDirectory(activeDirectoryPath)} disabled={!activeDirectoryPath.trim()}>Set & Play</Button>
+                            <Button
+                                onClick={() => handleSetActiveDirectory(activeDirectoryPath)}
+                                disabled={!activeDirectoryPath.trim()}
+                            >
+                                Set & Play
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>

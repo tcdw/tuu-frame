@@ -294,7 +294,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
 
         // For all other GET requests, serve the main HTML file of the remote UI.
         // This allows client-side routing to take over.
-        res.sendFile(path.join(remoteUiPath, "index.html"), (err) => {
+        res.sendFile(path.join(remoteUiPath, "index.html"), err => {
             if (err) {
                 const attemptedPath = path.resolve(path.join(remoteUiPath, "index.html"));
                 console.error(`Error sending SPA fallback file (index.html) from path: ${attemptedPath}`);
@@ -307,8 +307,8 @@ export function createServer(win: BrowserWindow): Promise<void> {
     };
     expressApp.get("*", spaFallbackHandler);
 
-    return new Promise((resolve) => {
-        expressApp.listen(port, () => {
+    return new Promise(resolve => {
+        expressApp.listen(port, "0.0.0.0", () => {
             console.log(`Express server listening on http://localhost:${port}`);
             resolve();
         });

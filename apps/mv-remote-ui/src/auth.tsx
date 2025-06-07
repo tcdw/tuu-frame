@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { API_BASE_URL } from "./utils/request.ts";
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -17,7 +18,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = "http://localhost:3001/api"; // mv-player server
 const JWT_STORAGE_KEY = "mv_remote_jwt_token";
 
 interface JwtPayload {

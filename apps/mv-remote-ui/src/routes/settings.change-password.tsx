@@ -6,6 +6,14 @@ export const Route = createFileRoute("/settings/change-password")({
     component: ChangePasswordComponent,
 });
 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { KeyRound, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Link } from "@tanstack/react-router";
+
 function ChangePasswordComponent() {
     const auth = useAuth();
     const navigate = useNavigate();
@@ -34,7 +42,6 @@ function ChangePasswordComponent() {
             setError("New passwords do not match.");
             return;
         }
-        // The username is no longer passed; it's derived from the JWT on the server.
         const result = await auth.changePassword(oldPassword, newPassword);
 
         if (result.success) {
@@ -43,96 +50,101 @@ function ChangePasswordComponent() {
             setNewPassword("");
             setConfirmPassword("");
             if (result.message && result.message.includes("Please log in again")) {
-                // Server might say this if username was changed (not implemented in this form yet)
-                // or if a re-login is strictly required for other reasons.
-                setTimeout(() => navigate({ to: '/login', replace: true }), 3000); 
+                setTimeout(() => navigate({ to: '/login', replace: true }), 3000);
             }
         } else {
             setError(result.error || "Failed to change password. Please check your details.");
         }
     };
 
-    if (auth.isLoading) {
+    if (auth.isLoading && !auth.isAuthenticated) { // Show loader only if not yet authenticated but loading
         return (
-            <div className="container">
-                <p>Loading...</p>
+            <div className="flex justify-center items-center min-h-screen">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
         );
     }
-    if (!auth.isAuthenticated) {
-        return null; // Or a minimal loading spinner while redirecting
+
+    if (!auth.isAuthenticated && !auth.isLoading) {
+        return null; // Should be redirected by useEffect
     }
 
     return (
-        <div
-            className="container"
-            style={{
-                maxWidth: "500px",
-                margin: "50px auto",
-                padding: "20px",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-            }}
-        >
-            <h2>Change Password</h2>
-            <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: "15px" }}>
-                    <label htmlFor="oldPassword" style={{ display: "block", marginBottom: "5px" }}>
-                        Old Password
-                    </label>
-                    <input
-                        type="password"
-                        id="oldPassword"
-                        value={oldPassword}
-                        onChange={e => setOldPassword(e.target.value)}
-                        style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-                        autoComplete="current-password"
-                    />
-                </div>
-                <div style={{ marginBottom: "15px" }}>
-                    <label htmlFor="newPassword" style={{ display: "block", marginBottom: "5px" }}>
-                        New Password
-                    </label>
-                    <input
-                        type="password"
-                        id="newPassword"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-                        autoComplete="new-password"
-                    />
-                </div>
-                <div style={{ marginBottom: "15px" }}>
-                    <label htmlFor="confirmPassword" style={{ display: "block", marginBottom: "5px" }}>
-                        Confirm New Password
-                    </label>
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
-                        autoComplete="new-password"
-                    />
-                </div>
-                {error && <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>}
-                {successMessage && <p style={{ color: "green", marginBottom: "10px" }}>{successMessage}</p>}
-                <button
-                    type="submit"
-                    disabled={auth.isLoading}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        backgroundColor: "#28a745",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                    }}
-                >
-                    {auth.isLoading ? "Changing..." : "Change Password"}
-                </button>
-            </form>
+        <div className="container mx-auto py-8 flex flex-col items-center">
+            <div className="w-full max-w-md mb-6">
+                <Link to="/dashboard" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                </Link>
+            </div>
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle className="flex items-center text-2xl">
+                        <KeyRound className="mr-3 h-6 w-6 text-primary" /> Change Password
+                    </CardTitle>
+                    <CardDescription>
+                        Update your password below. Make sure it's a strong one!
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="grid gap-6">
+                        <div className="grid gap-2">
+                            <Label htmlFor="oldPassword">Old Password</Label>
+                            <Input
+                                type="password"
+                                id="oldPassword"
+                                value={oldPassword}
+                                onChange={e => setOldPassword(e.target.value)}
+                                autoComplete="current-password"
+                                required
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="newPassword">New Password</Label>
+                            <Input
+                                type="password"
+                                id="newPassword"
+                                value={newPassword}
+                                onChange={e => setNewPassword(e.target.value)}
+                                autoComplete="new-password"
+                                required
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Input
+                                type="password"
+                                id="confirmPassword"
+                                value={confirmPassword}
+                                onChange={e => setConfirmPassword(e.target.value)}
+                                autoComplete="new-password"
+                                required
+                            />
+                        </div>
+                        {error && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+                        {successMessage && (
+                            <Alert variant="default" className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400">
+                                <CheckCircle2 className="h-4 w-4 text-green-500 dark:text-green-400" />
+                                <AlertTitle className="text-green-700 dark:text-green-500">Success</AlertTitle>
+                                <AlertDescription>{successMessage}</AlertDescription>
+                            </Alert>
+                        )}
+                        <Button type="submit" className="w-full" disabled={auth.isLoadingPasswordChange}> {/* Assuming isLoadingPasswordChange from AuthContext */}
+                            {auth.isLoadingPasswordChange ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Changing...</>
+                            ) : (
+                                "Change Password"
+                            )}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
     );
 }

@@ -15,6 +15,7 @@ interface AuthContextType {
         newUsername?: string,
     ) => Promise<{ success: boolean; error?: string; message?: string }>;
     isLoading: boolean;
+    isLoadingPasswordChange: boolean; // Added for specific password change loading state
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,7 +51,8 @@ const parseJwt = (token: string): JwtPayload | null => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [username, setUsername] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // General loading for auth status check
+    const [isLoadingPasswordChange, setIsLoadingPasswordChange] = useState(false); // Specific for password change
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -119,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         newPassword: string, // Kept as string, can be empty if not changing password
         newUsername?: string,
     ): Promise<{ success: boolean; error?: string; message?: string }> => {
-        setIsLoading(true);
+        setIsLoadingPasswordChange(true);
 
         const changePayload: ChangeCredentialsRequest = {
             currentPassword,
@@ -157,17 +159,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     setUsername(newUsername);
                 }
             }
-            setIsLoading(false);
             return { success: true, message: data.message };
         } catch (error: any) {
             console.error("Change credentials error in AuthProvider:", error);
-            setIsLoading(false);
             return { success: false, error: error.message || "Failed to change credentials" };
+        } finally {
+            setIsLoadingPasswordChange(false);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, username, login, logout, changePassword, isLoading }}>
+        <AuthContext.Provider value={{ isAuthenticated, username, login, logout, changePassword, isLoading, isLoadingPasswordChange }}>
             {children}
         </AuthContext.Provider>
     );

@@ -8,7 +8,6 @@ export const Route = createRootRoute({
 function RootComponent() {
     return (
         <AuthProvider>
-            {/* Add any shared layout components here, e.g., header, nav */}
             <Outlet />
         </AuthProvider>
     );

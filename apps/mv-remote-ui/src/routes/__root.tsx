@@ -1,16 +1,15 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router';
-import { AuthProvider } from '../auth'; // Adjusted path for AuthProvider
+import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { AuthProvider } from "../auth"; // Adjusted path for AuthProvider
 
 export const Route = createRootRoute({
-  component: RootComponent,
+    component: RootComponent,
 });
 
 function RootComponent() {
-  return (
-    <AuthProvider>
-      {/* Add any shared layout components here, e.g., header, nav */}
-      <Outlet />
-    </AuthProvider>
-  );
+    return (
+        <AuthProvider>
+            {/* Add any shared layout components here, e.g., header, nav */}
+            <Outlet />
+        </AuthProvider>
+    );
 }
-

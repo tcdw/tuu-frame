@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "../auth";
-import "../App.css"; // Assuming App.css is in src/ and contains relevant styles
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from "../services/api";
 import type { UIPreset } from "../services/api";
 
@@ -165,7 +164,7 @@ function DashboardComponent() {
                         Change Password
                     </Link>
                     <button onClick={handleLogout} disabled={auth.isLoading}>
-                        {auth.isLoading ? 'Logging out...' : 'Logout'}
+                        {auth.isLoading ? "Logging out..." : "Logout"}
                     </button>
                 </div>
             </div>

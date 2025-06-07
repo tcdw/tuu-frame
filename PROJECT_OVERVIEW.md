@@ -100,7 +100,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   **Framework/Library**: React, TanStack Router
 *   **Language**: TypeScript
 *   **Build Tool**: Vite (orchestrated by Turborepo)
-*   **Styling**: CSS
+*   **Styling**: Tailwind CSS v4, shadcn/ui
 *   **State Management**: React Context (`AuthContext`)
 *   **API Communication**: Axios
 *   **Package Manager**: pnpm (via workspaces)
@@ -137,4 +137,4 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-07T23:00:53+08:00.
+This document was last updated on: 2025-06-08T00:55:04+08:00.

@@ -22,14 +22,20 @@ The monorepo contains two main applications, located within the `apps/` director
 
 Located in the `apps/mv-player/` directory within the monorepo.
 
-### Key Features:
+### Key Features & UI Serving:
 
+*   **Dual UI Architecture**:
+    *   **`mv-player` Main UI**: The Electron window loads `mv-player`'s own interface. In development, this is served by its Vite dev server (e.g., `http://localhost:5173`). In production, it's loaded from the packaged `dist/index.html` file.
+    *   **`mv-remote-ui` Web Interface**: Served by an embedded Express.js server (see below) from the `remote-ui-assets/` directory (which contains the build output of the `mv-remote-ui` application). This makes the remote control panel accessible via a web browser on the local network.
+*   **Embedded Express.js Server & API**: Runs within the Electron main process on port `3001` (binding to `0.0.0.0` for LAN accessibility).
+    *   **Serves `mv-remote-ui`**: Provides the static assets for the remote control web interface.
+    *   **Provides Backend API**: Exposes endpoints for remote management (presets, playback control, authentication).
+    *   **Conditional CORS**: Implements a strict CORS policy. In development (`process.env.NODE_ENV === 'development'`), it allows wildcard origins (`*`) for flexibility with tools like Vite's dev server. In production, explicit CORS headers are omitted, relying on same-origin browser behavior as both the API and remote UI are served from the same host and port (`http://<local-ip>:3001`).
+    *   *(Future Enhancement: IP CIDR restriction planned for enhanced security on the LAN-exposed server).*
 *   **Local Video Playback**: Plays video files (e.g., .mp4, .mkv, .webm) from user-specified directories.
 *   **Random Playback**: Automatically plays videos in a random order from the active directory. Continuous playback upon video end.
 *   **Custom Protocol**: Uses `mv-stream://` custom protocol to securely serve local video files to the renderer, allowing `webSecurity` to remain enabled.
 *   **Preset Folder Management**: Allows saving and loading lists of preset directories. Presets are stored in a JSON file (`presets.json`) within the Electron app's user data directory.
-*   **Express API Server**: An embedded Express.js server runs on port `3001` within the Electron main process to handle remote commands.
-    *   **CORS Enabled**: Configured to allow cross-origin requests (currently set to `*` for development) from the remote UI.
 *   **IPC Communication**: Uses Electron's IPC to communicate between the main process (API, file system logic) and the renderer process (UI updates).
 
 ### Technical Stack:
@@ -68,6 +74,7 @@ Located in the `apps/mv-player/` directory within the monorepo.
 *   `index.html`: The HTML structure for the renderer window.
 *   `vite.config.ts`: Vite build configuration.
 *   `package.json`: Project dependencies and scripts.
+*   `electron-builder.json5`: Configuration for `electron-builder`, specifying how the application is packaged, including assets like `dist/` (player UI), `dist-electron/` (main/preload scripts), and `remote-ui-assets/` (remote UI assets).
 
 ## 4. `mv-remote-ui` (Web Remote Control)
 
@@ -100,12 +107,12 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   `vite.config.ts`: Vite build configuration, including TanStack Router plugin.
 *   `package.json`: Project dependencies and scripts.
 
-## 5. Current Status & Potential Next Steps
+## 5. Current Status & Next Steps
 
 *   **Monorepo Transition**: The project has been successfully converted to a monorepo structure using Turborepo and pnpm workspaces. This enhances project organization, build efficiency, and dependency management.
-*   **`mv-player`**: Core functionality for local video playback, API exposure, and a secure single-user authentication system (JWT/bcrypt) is in place. React was removed from its renderer for simplicity. A build issue related to `bcrypt` and `__dirname` in an ES module context has been resolved.
-*   **`mv-remote-ui`**: Features preset management and playback directory control. It's fully integrated with `mv-player`'s real authentication system, handling login, logout, password changes, and JWT management for all API calls. Uses TanStack Router for navigation with protected routes.
-*   **API Communication**: Functional between `mv-remote-ui` and `mv-player`.
+*   **`mv-player` & `mv-remote-ui` Integration**: The system is now fully functional with `mv-player` serving its own UI in the Electron window and simultaneously serving the `mv-remote-ui` via an embedded Express server on port `3001` (accessible on the LAN). This setup works correctly in both development (Vite dev servers, flexible CORS) and production (packaged assets, stricter same-origin policy for Express server). Packaging via `electron-builder` (configured in `electron-builder.json5`) correctly includes all necessary assets (`mv-player`'s `dist/`, `dist-electron/`, and `remote-ui-assets/`).
+*   **Authentication**: Robust single-user authentication (JWT/bcrypt) is implemented for the API, used by `mv-remote-ui`.
+*   **Monorepo Structure**: Successfully managed by Turborepo and pnpm workspaces.
 
 ### Potential Future Enhancements:
 
@@ -115,11 +122,12 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
     *   Refine UI/UX, especially for user feedback related to the login system and API interactions. Consider replacing `localStorage` for auth in production.
 2.  **`mv-player` Enhancements:**
     *   Implement recursive directory scanning for videos.
-    *   Secure the API further if exposed beyond localhost, especially considering the remote UI interaction.
+    *   Implement IP CIDR restrictions for the Express server to enhance security for LAN access.
+    *   Secure the API further if exposed beyond the local network, especially considering the remote UI interaction.
 3.  **Shared Packages (Monorepo Advantage)**:
     *   Explore creating shared packages within the monorepo (e.g., in a `packages/` directory) for common types (e.g., API response structures), utility functions, or even UI components that could be used by both `mv-player` (if it reintroduces a more complex UI) and `mv-remote-ui`.
 4.  **Testing**: Implement comprehensive unit and integration tests for both applications and their interaction, leveraging Turborepo's test pipeline. This includes testing authentication flows and API contracts.
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-07T17:50:20+08:00.
+This document was last updated on: 2025-06-07T22:00:27+08:00.

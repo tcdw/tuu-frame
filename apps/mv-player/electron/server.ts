@@ -24,12 +24,15 @@ export function createServer(win: BrowserWindow): Promise<void> {
     const expressApp = express();
     const userDataPath = win.webContents.session.getStoragePath() || app.getPath("userData");
 
-    // CORS configuration
-    const corsOptions = {
-        origin: "*", // Allow only the remote UI's origin
-        optionsSuccessStatus: 200, // For legacy browser support
-    };
-    expressApp.use(cors(corsOptions));
+    // Only enable wildcard CORS configuration when during development (For security reasons)
+    if (process.env.NODE_ENV === "development") {
+        // CORS configuration
+        const corsOptions = {
+            origin: "*", // Allow only the remote UI's origin
+            optionsSuccessStatus: 200, // For legacy browser support
+        };
+        expressApp.use(cors(corsOptions));
+    }
 
     expressApp.use(express.json()); // Middleware to parse JSON bodies
 

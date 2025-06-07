@@ -68,7 +68,7 @@ pnpm --filter mv-player dev
 pnpm --filter mv-remote-ui dev
 ````
 
-> 默认播放器服务运行于 `localhost:3001`，Web 控制界面访问地址为 `http://<电脑 IP>:5173`
+> 默认播放器服务运行于 `localhost:15678`，Web 控制界面访问地址为 `http://<电脑 IP>:5173`
 
 ---
 

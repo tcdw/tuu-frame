@@ -27,10 +27,10 @@ Located in the `apps/mv-player/` directory within the monorepo.
 *   **Dual UI Architecture**:
     *   **`mv-player` Main UI**: The Electron window loads `mv-player`'s own interface. In development, this is served by its Vite dev server (e.g., `http://localhost:5173`). In production, it's loaded from the packaged `dist/index.html` file.
     *   **`mv-remote-ui` Web Interface**: Served by an embedded Express.js server (see below) from the `remote-ui-assets/` directory (which contains the build output of the `mv-remote-ui` application). This makes the remote control panel accessible via a web browser on the local network.
-*   **Embedded Express.js Server & API**: Runs within the Electron main process on port `3001` (binding to `0.0.0.0` for LAN accessibility).
+*   **Embedded Express.js Server & API**: Runs within the Electron main process on port `15678` (binding to `0.0.0.0` for LAN accessibility).
     *   **Serves `mv-remote-ui`**: Provides the static assets for the remote control web interface.
     *   **Provides Backend API**: Exposes endpoints for remote management (presets, playback control, authentication).
-    *   **Conditional CORS**: Implements a strict CORS policy. In development (`process.env.NODE_ENV === 'development'`), it allows wildcard origins (`*`) for flexibility with tools like Vite's dev server. In production, explicit CORS headers are omitted, relying on same-origin browser behavior as both the API and remote UI are served from the same host and port (`http://<local-ip>:3001`).
+    *   **Conditional CORS**: Implements a strict CORS policy. In development (`process.env.NODE_ENV === 'development'`), it allows wildcard origins (`*`) for flexibility with tools like Vite's dev server. In production, explicit CORS headers are omitted, relying on same-origin browser behavior as both the API and remote UI are served from the same host and port (`http://<local-ip>:15678`).
     *   *(Future Enhancement: IP CIDR restriction planned for enhanced security on the LAN-exposed server).*
 *   **Local Video Playback**: Plays video files (e.g., .mp4, .mkv, .webm) from user-specified directories.
 *   **Random Playback**: Automatically plays videos in a random order from the active directory. Continuous playback upon video end.
@@ -53,7 +53,7 @@ Located in the `apps/mv-player/` directory within the monorepo.
 *   **Secure Endpoints**: All API endpoints (except for authentication routes) are protected and require a valid JWT.
 *   **Credential Management**: Supports login, logout, and changing credentials (username/password).
 
-### API Endpoints (on `http://localhost:3001`):
+### API Endpoints (on `http://localhost:15678`):
 
 *   `GET /api/presets`: Retrieves the current list of preset folder paths.
 *   `POST /api/presets`: Adds a new folder path to the presets. Expects `{"path": "/your/folder/path"}`.
@@ -110,7 +110,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 ## 5. Current Status & Next Steps
 
 *   **Monorepo Transition**: The project has been successfully converted to a monorepo structure using Turborepo and pnpm workspaces. This enhances project organization, build efficiency, and dependency management.
-*   **`mv-player` & `mv-remote-ui` Integration**: The system is now fully functional with `mv-player` serving its own UI in the Electron window and simultaneously serving the `mv-remote-ui` via an embedded Express server on port `3001` (accessible on the LAN). This setup works correctly in both development (Vite dev servers, flexible CORS) and production (packaged assets, stricter same-origin policy for Express server). Packaging via `electron-builder` (configured in `electron-builder.json5`) correctly includes all necessary assets (`mv-player`'s `dist/`, `dist-electron/`, and `remote-ui-assets/`).
+*   **`mv-player` & `mv-remote-ui` Integration**: The system is now fully functional with `mv-player` serving its own UI in the Electron window and simultaneously serving the `mv-remote-ui` via an embedded Express server on port `15678` (accessible on the LAN). This setup works correctly in both development (Vite dev servers, flexible CORS) and production (packaged assets, stricter same-origin policy for Express server). Packaging via `electron-builder` (configured in `electron-builder.json5`) correctly includes all necessary assets (`mv-player`'s `dist/`, `dist-electron/`, and `remote-ui-assets/`).
 *   **Authentication**: Robust single-user authentication (JWT/bcrypt) is implemented for the API, used by `mv-remote-ui`.
 *   **Monorepo Structure**: Successfully managed by Turborepo and pnpm workspaces.
 

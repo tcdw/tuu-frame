@@ -40,7 +40,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
     // This directory will contain the build output of mv-remote-ui
     const remoteUiPath = path.join(__dirname, "..", "remote-ui-assets");
     expressApp.use(express.static(remoteUiPath));
-    const port = 3001;
+    const port = 15678;
 
     // Initialize credentials on server startup
     initializeCredentials(userDataPath).catch(err => {

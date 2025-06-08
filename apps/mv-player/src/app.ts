@@ -6,6 +6,22 @@ let currentVideoPath: string | undefined = undefined;
 const videoElement = document.getElementById("video-player") as HTMLVideoElement | null;
 const statusMessageElement = document.getElementById("status-message") as HTMLParagraphElement | null;
 
+if (videoElement) {
+    videoElement.addEventListener('play', () => {
+        console.log('[Renderer] Video playing');
+        globalThis.electronAPI?.sendPlaybackState(true);
+    });
+
+    videoElement.addEventListener('pause', () => {
+        console.log('[Renderer] Video paused');
+        globalThis.electronAPI?.sendPlaybackState(false);
+    });
+
+    videoElement.addEventListener('ended', handleVideoEnded);
+} else {
+    console.error('Video element not found');
+}
+
 function setVideoUrl(url: string | undefined) {
     if (videoElement) {
         if (url) {
@@ -76,14 +92,9 @@ function playNextTrack() {
 }
 
 function handleVideoEnded() {
-    console.log("Video ended, playing next random video from playlist.");
-    playRandomVideo(currentPlaylist, currentVideoPath);
-}
-
-if (videoElement) {
-    videoElement.onended = handleVideoEnded;
-} else {
-    console.error("Video player element not found in the DOM.");
+    console.log("Video ended, sending playback state false and playing next random video from playlist.");
+    globalThis.electronAPI?.sendPlaybackState(false);
+    playNextTrack(); // Autoplay next track
 }
 
 // Listen for playlist updates from the main process

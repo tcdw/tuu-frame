@@ -129,3 +129,10 @@ export async function nextTrackRemote(): Promise<ApiTypes.PlayerControlSuccessDa
         ApiTypes.PlayerControlSuccessData
     >("/player/next-track");
 }
+
+/**
+ * Gets the current playback status from the player.
+ */
+export async function getPlayerStatus(): Promise<ApiTypes.PlayerStatusData> {
+    return apiClient.get<ApiTypes.PlayerStatusResponse, ApiTypes.PlayerStatusData>("/player/status");
+}

@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
         ipcRenderer.on("main:updatePlaylist", (_event, value) => callback(value)),
     onPlayerCommand: (callback: (command: string, ...args: any[]) => void) =>
         ipcRenderer.on("main:playerCommand", (_event, command, ...args) => callback(command, ...args)),
+    sendPlaybackState: (isPlaying: boolean) => ipcRenderer.send("renderer:playbackStateUpdate", isPlaying),
     // We can expose other specific APIs here as needed
 });

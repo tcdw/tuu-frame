@@ -1,12 +1,12 @@
-import express, { Request, Response, NextFunction, RequestHandler } from "express";
+import express, { Request, Response, RequestHandler } from "express";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
 import * as ApiTypes from "../src/shared-api-types.ts";
 import { loadPresets, savePresets, scanDirectoryForVideos } from "./functions.ts";
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { BrowserWindow, app } from "electron";
+import { BrowserWindow, ipcMain, app } from "electron";
 import {
     initializeCredentials,
     loadCredentials,
@@ -21,6 +21,8 @@ import {
 } from "./auth";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+let currentPlayerIsPlaying: boolean = false;
 
 export function createServer(win: BrowserWindow): Promise<void> {
     const expressApp = express();
@@ -40,7 +42,14 @@ export function createServer(win: BrowserWindow): Promise<void> {
 
     // Serve mv-remote-ui static files from 'remote-ui-assets' directory
     // This directory will contain the build output of mv-remote-ui
+    // const presetsFilePath = path.join(userDataPath, "presets.json");
     const remoteUiPath = path.join(__dirname, "..", "remote-ui-assets");
+
+    // Listen for playback state updates from the renderer
+    ipcMain.on("renderer:playbackStateUpdate", (_event, isPlaying: boolean) => {
+        console.log(`[Main] Received playback state update from renderer: ${isPlaying ? "Playing" : "Paused/Stopped"}`);
+        currentPlayerIsPlaying = isPlaying;
+    });
     expressApp.use(express.static(remoteUiPath));
     const port = 15678;
 
@@ -63,13 +72,14 @@ export function createServer(win: BrowserWindow): Promise<void> {
         }
     }) as any);
 
-
     // Login
     expressApp.post("/api/auth/login", (async (req: Request, res: Response) => {
         const { username, clientHashedPassword } = req.body;
 
         if (!username || !clientHashedPassword) {
-            return res.status(400).json({ code: 400, data: null, err: "Username and client-hashed password are required." });
+            return res
+                .status(400)
+                .json({ code: 400, data: null, err: "Username and client-hashed password are required." });
         }
 
         try {
@@ -135,7 +145,11 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 updatedCredentials.username = newUsername.trim();
             }
 
-            if (newClientHashedPassword && typeof newClientHashedPassword === "string" && newClientHashedPassword.trim() !== "") {
+            if (
+                newClientHashedPassword &&
+                typeof newClientHashedPassword === "string" &&
+                newClientHashedPassword.trim() !== ""
+            ) {
                 // The newClientHashedPassword is what we bcrypt and store
                 updatedCredentials.passwordHash = await hashPassword(newClientHashedPassword.trim());
             }
@@ -146,7 +160,11 @@ export function createServer(win: BrowserWindow): Promise<void> {
             // The client will need to log in again to get a JWT for the new username.
             // For this application, simply returning a success message is sufficient.
             // A more advanced system might implement token revocation or automatically issue a new token.
-            res.json({ code: 200, data: { message: "Credentials updated successfully. Please log in again if username was changed." }, err: null });
+            res.json({
+                code: 200,
+                data: { message: "Credentials updated successfully. Please log in again if username was changed." },
+                err: null,
+            });
         } catch (error) {
             console.error("Change credentials error:", error);
             res.status(500).json({ code: 500, data: null, err: "Internal server error during credential change." });
@@ -161,76 +179,94 @@ export function createServer(win: BrowserWindow): Promise<void> {
     });
 
     // --- MJPEG Monitoring Stream ---
-    expressApp.get("/api/monitor/snapshot.jpg", authenticateToken, async (_req: AuthenticatedRequest, res: Response) => {
-        if (!win || win.isDestroyed()) {
-            return res.status(503).send("Player window not available.");
-        }
-
-        try {
-            if (!win || win.isDestroyed() || !win.webContents || win.webContents.isDestroyed()) {
-                return res.status(503).send("Player window not available to capture.");
+    expressApp.get(
+        "/api/monitor/snapshot.jpg",
+        authenticateToken,
+        async (_req: AuthenticatedRequest, res: Response) => {
+            if (!win || win.isDestroyed()) {
+                return res.status(503).send("Player window not available.");
             }
 
-            const image = await win.webContents.capturePage();
-            if (image.isEmpty()) {
-                // Send a 204 No Content if the image is empty, or a placeholder?
-                // For now, let's send 204, client can decide how to handle.
-                if (process.env.NODE_ENV === "development") {
-                    console.log("[Snapshot] Captured empty image.");
+            try {
+                if (!win || win.isDestroyed() || !win.webContents || win.webContents.isDestroyed()) {
+                    return res.status(503).send("Player window not available to capture.");
                 }
-                return res.status(204).end(); 
+
+                const image = await win.webContents.capturePage();
+                if (image.isEmpty()) {
+                    // Send a 204 No Content if the image is empty, or a placeholder?
+                    // For now, let's send 204, client can decide how to handle.
+                    if (process.env.NODE_ENV === "development") {
+                        console.log("[Snapshot] Captured empty image.");
+                    }
+                    return res.status(204).end();
+                }
+
+                const jpeg = image.toJPEG(70); // Quality 0-100
+
+                if (process.env.NODE_ENV === "development") {
+                    console.log(
+                        "[Snapshot] Sending one frame. Size: " + jpeg.length + " bytes. Time: " + new Date().getTime(),
+                    );
+                }
+
+                res.setHeader("Content-Type", "image/jpeg");
+                res.setHeader("Content-Length", jpeg.length.toString());
+                res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate, private");
+                res.setHeader("Pragma", "no-cache");
+                res.setHeader("Expires", "0");
+                res.send(jpeg);
+            } catch (error) {
+                console.error("[Snapshot] Error capturing or sending frame:", error);
+                if (!res.headersSent) {
+                    res.status(500).send("Error capturing frame.");
+                } else if (!res.writableEnded) {
+                    // If headers were sent but data wasn't, try to end the response gracefully.
+                    try {
+                        res.end();
+                    } catch (e) {
+                        console.error("[Snapshot] Error ending response on error:", e);
+                    }
+                }
             }
-
-            const jpeg = image.toJPEG(70); // Quality 0-100
-
-            if (process.env.NODE_ENV === "development") {
-                console.log("[Snapshot] Sending one frame. Size: " + jpeg.length + " bytes. Time: " + new Date().getTime());
-            }
-
-            res.setHeader('Content-Type', 'image/jpeg');
-            res.setHeader('Content-Length', jpeg.length.toString());
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-            res.send(jpeg);
-
-        } catch (error) {
-            console.error("[Snapshot] Error capturing or sending frame:", error);
-            if (!res.headersSent) {
-                res.status(500).send("Error capturing frame.");
-            } else if (!res.writableEnded) {
-                // If headers were sent but data wasn't, try to end the response gracefully.
-                try { res.end(); } catch (e) { console.error("[Snapshot] Error ending response on error:", e); }
-            }
-        }
-    });
+        },
+    );
 
     // --- Preset Management Routes ---
-    expressApp.get("/api/presets", authenticateToken, (async (_req: AuthenticatedRequest, res: Response<ApiTypes.PresetsListResponse>) => {
+    expressApp.get("/api/presets", authenticateToken, (async (
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.PresetsListResponse>,
+    ) => {
         const presets = await loadPresets();
         res.json({ code: 200, data: presets, err: null });
     }) as any);
 
     // Browse Directories
-    expressApp.get("/api/browse-directories", authenticateToken, (async (req: AuthenticatedRequest, res: Response<ApiTypes.BrowseDirectoriesResponse>) => {
-        const currentPath = typeof req.query.path === 'string' ? req.query.path : app.getPath('home');
+    expressApp.get("/api/browse-directories", authenticateToken, (async (
+        req: AuthenticatedRequest,
+        res: Response<ApiTypes.BrowseDirectoriesResponse>,
+    ) => {
+        const currentPath = typeof req.query.path === "string" ? req.query.path : app.getPath("home");
 
         try {
             // Security check: Prevent going above the home directory or a predefined root for simplicity
             // More robust sandboxing might be needed for a production app.
-            const homeDir = app.getPath('home');
+            const homeDir = app.getPath("home");
             if (!path.resolve(currentPath).startsWith(path.resolve(homeDir))) {
-                 // Or, if you want to allow browsing other drives/mount points, adjust this logic.
-                 // For now, restrict to home directory and its subdirectories.
+                // Or, if you want to allow browsing other drives/mount points, adjust this logic.
+                // For now, restrict to home directory and its subdirectories.
                 // We can make this more flexible later, e.g. by listing drives on initial call.
-                if (currentPath !== homeDir && currentPath !== path.dirname(currentPath)) { // Allow listing home itself
+                if (currentPath !== homeDir && currentPath !== path.dirname(currentPath)) {
+                    // Allow listing home itself
                     // A simple check to allow listing initial drives if currentPath is a root (e.g., 'C:\' or '/')
                     // This check is very basic and OS-dependent.
                     // A more robust solution would list mounted drives.
                     const isRoot = currentPath === path.parse(currentPath).root;
                     if (!isRoot) {
                         console.warn(`Attempt to browse outside allowed root: ${currentPath}`);
-                        return res.status(403).json({ code: 403, data: null, err: "Access denied: Cannot browse above home directory." });
+                        return res
+                            .status(403)
+                            .json({ code: 403, data: null, err: "Access denied: Cannot browse above home directory." });
                     }
                 }
             }
@@ -244,7 +280,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
                     isDirectory: true,
                 }))
                 .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
-            
+
             // Add a way to go "up" one directory
             if (path.resolve(currentPath) !== path.resolve(homeDir) && currentPath !== path.parse(currentPath).root) {
                 directoryEntries.unshift({
@@ -257,9 +293,9 @@ export function createServer(win: BrowserWindow): Promise<void> {
             res.json({ code: 200, data: { path: currentPath, entries: directoryEntries }, err: null });
         } catch (error: any) {
             console.error(`Error browsing directory ${currentPath}:`, error);
-            if (error.code === 'EACCES') {
+            if (error.code === "EACCES") {
                 res.status(403).json({ code: 403, data: null, err: `Permission denied for ${currentPath}.` });
-            } else if (error.code === 'ENOENT') {
+            } else if (error.code === "ENOENT") {
                 res.status(404).json({ code: 404, data: null, err: `Directory not found: ${currentPath}.` });
             } else {
                 res.status(500).json({ code: 500, data: null, err: `Error browsing directory: ${error.message}` });
@@ -293,7 +329,8 @@ export function createServer(win: BrowserWindow): Promise<void> {
         }
 
         const currentPresets = await loadPresets();
-        if (currentPresets.some(p => p.path === presetPath)) { // Check using 'path'
+        if (currentPresets.some(p => p.path === presetPath)) {
+            // Check using 'path'
             res.status(409).json({ code: 409, data: null, err: "This preset path already exists." });
             return;
         }
@@ -307,7 +344,11 @@ export function createServer(win: BrowserWindow): Promise<void> {
 
         const updatedPresets = [...currentPresets, newPreset];
         await savePresets(updatedPresets);
-        res.status(201).json({ code: 201, data: { presets: updatedPresets, message: "Preset added successfully." }, err: null });
+        res.status(201).json({
+            code: 201,
+            data: { presets: updatedPresets, message: "Preset added successfully." },
+            err: null,
+        });
     }) as any);
 
     // Delete a preset
@@ -384,6 +425,12 @@ export function createServer(win: BrowserWindow): Promise<void> {
         res: Response<ApiTypes.PlayerControlResponse>,
     ) => {
         if (win && !win.isDestroyed()) {
+            // Optimistically update server-side state
+            currentPlayerIsPlaying = !currentPlayerIsPlaying;
+            console.log(
+                `[API] Toggled play/pause. New optimistic state: ${currentPlayerIsPlaying ? "Playing" : "Paused"}`,
+            );
+
             win.webContents.send("main:playerCommand", "toggle-play-pause");
             console.log("[API] Sent 'toggle-play-pause' command to renderer.");
             res.json({ code: 200, data: { message: "Toggle play/pause command sent." }, err: null });
@@ -391,6 +438,14 @@ export function createServer(win: BrowserWindow): Promise<void> {
             console.error("[API] Main window not available for 'toggle-play-pause'.");
             res.status(503).json({ code: 503, data: null, err: "Player window not available." });
         }
+    }) as any);
+
+    expressApp.get("/api/player/status", authenticateToken, (async (
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.PlayerStatusResponse>, // Ensure this type is defined in shared-api-types
+    ) => {
+        console.log(`[API] GET /api/player/status. Current state: ${currentPlayerIsPlaying ? "Playing" : "Paused"}`);
+        res.json({ code: 200, data: { isPlaying: currentPlayerIsPlaying }, err: null });
     }) as any);
 
     expressApp.post("/api/player/next-track", authenticateToken, (async (
@@ -410,7 +465,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
     // SPA Fallback: For any GET request not handled by static files or API routes,
     // serve index.html from the mv-remote-ui build.
     // This must come AFTER all API routes and AFTER express.static for the remote UI.
-    const spaFallbackHandler: RequestHandler = (req: Request, res: Response, _next: NextFunction) => {
+    const spaFallbackHandler: RequestHandler = (req: Request, res: Response) => {
         // If the request path starts with /api/ but wasn't caught by an API route,
         // it's a 404 for an API endpoint.
         if (req.path.startsWith("/api/")) {

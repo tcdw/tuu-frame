@@ -124,6 +124,14 @@ export interface ChangeCredentialsSuccessData {
 export type ChangeCredentialsResponse = ApiResponse<ChangeCredentialsSuccessData>;
 
 // --- /api/player/* ---
+
+// For GET /api/player/status
+export interface PlayerStatusData {
+    isPlaying: boolean;
+}
+export type PlayerStatusResponse = ApiResponse<PlayerStatusData>;
+
+// For POST /api/player/toggle-play-pause and POST /api/player/next-track
 export interface PlayerControlSuccessData {
     message: string;
 }

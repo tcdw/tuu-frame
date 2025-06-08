@@ -31,14 +31,21 @@ export async function loadPresets(): Promise<PresetItem[]> {
         // Case 1: Old format (direct array of PresetItem) - migrate to versioned container
         if (Array.isArray(parsedData)) {
             console.log("Unversioned presets file detected. Migrating to versioned format (v1)...");
-            const currentPresets = parsedData as PresetItem[]; // Assume it's PresetItem[]
+            const migratedPresets = (parsedData as any[]).map(p => {
+                if (p.mainPath && typeof p.path === "undefined") {
+                    const { mainPath, ...rest } = p;
+                    return { ...rest, path: mainPath };
+                }
+                return p;
+            }) as PresetItem[];
+
             const versionedData: PresetDataContainer = {
                 version: CURRENT_DATA_VERSION,
-                presets: currentPresets,
+                presets: migratedPresets, // Use migrated presets
             };
             await savePresetDataContainer(versionedData);
             console.log("Migration to versioned format complete.");
-            return currentPresets;
+            return migratedPresets; // Return migrated presets
         }
 
         // Case 2: It's an object, hopefully PresetDataContainer
@@ -49,6 +56,18 @@ export async function loadPresets(): Promise<PresetItem[]> {
             "presets" in parsedData
         ) {
             const container = parsedData as PresetDataContainer;
+
+            // Ensure presets within the loaded container are also migrated if necessary
+            if (Array.isArray(container.presets)) {
+                container.presets = (container.presets as any[]).map(p => {
+                    if (p.mainPath && typeof p.path === "undefined") {
+                        const { mainPath, ...rest } = p;
+                        return { ...rest, path: mainPath };
+                    }
+                    return p;
+                }) as PresetItem[];
+            }
+
             if (container.version === CURRENT_DATA_VERSION) {
                 // Correct version, ensure presets is an array
                 return Array.isArray(container.presets) ? container.presets : [];
@@ -111,7 +130,7 @@ export async function scanDirectoryForVideos(directoryPath: string): Promise<str
         return files
             .filter(file => {
                 const ext = path.extname(file).toLowerCase();
-                return [".mp4", ".mkv", ".webm"].includes(ext);
+                return [".mp4", ".mkv", ".webm", ".mp3", ".wav", ".aac", ".m4a", ".flac", ".ogg"].includes(ext);
             })
             .map(file => path.join(directoryPath, file));
     } catch (error) {

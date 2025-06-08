@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { LogOut, KeyRound, Trash2, Play, PlusCircle, Loader2, AlertCircle, FolderOpen, ListVideo } from "lucide-react";
+import { LogOut, KeyRound, Trash2, Play, PlusCircle, Loader2, AlertCircle, FolderOpen, ListVideo, FolderSearch } from "lucide-react";
+import { DirectoryBrowserModal } from "@/components/DirectoryBrowserModal";
 
 // Helper to derive a name from a path
-const pathToName = (path: string): string => {
-    if (!path) return "Unnamed Preset";
-    const normalizedPath = path.endsWith("/") ? path.slice(0, -1) : path;
-    return normalizedPath.split("/").pop() || normalizedPath;
-};
+// const pathToName = (path: string): string => { // No longer needed as backend handles name derivation
+//     if (!path) return "Unnamed Preset";
+//     const normalizedPath = path.endsWith("/") ? path.slice(0, -1) : path;
+//     return normalizedPath.split("/").pop() || normalizedPath;
+// };
 
 export const Route = createFileRoute("/dashboard")({
     beforeLoad: () => {
@@ -33,7 +34,9 @@ function DashboardComponent() {
     };
 
     const [presets, setPresets] = useState<ApiTypes.PresetItem[]>([]);
+    const [newPresetName, setNewPresetName] = useState("");
     const [newPresetPath, setNewPresetPath] = useState("");
+    const [isBrowserModalOpen, setIsBrowserModalOpen] = useState(false);
     const [activeDirectoryPath, setActiveDirectoryPath] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loadingPresets, setLoadingPresets] = useState<boolean>(true);
@@ -71,7 +74,11 @@ function DashboardComponent() {
         }
         try {
             setError(null);
-            const result = await addPreset({ mainPath: newPresetPath.trim(), order: 'shuffle', name: pathToName(newPresetPath.trim()) });
+            const result = await addPreset({ 
+                path: newPresetPath.trim(), 
+                name: newPresetName.trim() || undefined, // Send undefined if name is empty, backend will derive
+                order: 'shuffle' 
+            });
             if (result && Array.isArray(result.presets)) {
                 setPresets(result.presets);
             } else {
@@ -80,6 +87,7 @@ function DashboardComponent() {
                 // Optionally, re-fetch presets to ensure consistency
                 // await fetchInitialPresets(); 
             }
+            setNewPresetName("");
             setNewPresetPath("");
         } catch (err) {
             console.error("Failed to add preset:", err);
@@ -135,25 +143,26 @@ function DashboardComponent() {
     if (!auth.isAuthenticated) return null;
 
     return (
-        <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8 bg-background">
-            <div className="w-full max-w-4xl">
-                <header className="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b">
-                    <h1 className="text-3xl font-bold text-foreground mb-4 sm:mb-0">MV Player Remote</h1>
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                        {auth.username && (
-                            <span className="text-sm text-muted-foreground hidden sm:inline">
-                                Welcome, {auth.username}!
-                            </span>
-                        )}
-                        <Link to="/settings/change-password">
-                            <Button variant="outline" size="sm">
-                                <KeyRound /> Change Password
+        <>
+            <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8 bg-background">
+                <div className="w-full max-w-4xl">
+                    <header className="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b">
+                        <h1 className="text-3xl font-bold text-foreground mb-4 sm:mb-0">MV Player Remote</h1>
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            {auth.username && (
+                                <span className="text-sm text-muted-foreground hidden sm:inline">
+                                    Welcome, {auth.username}!
+                                </span>
+                            )}
+                            <Link to="/settings/change-password">
+                                <Button variant="outline" size="sm">
+                                    <KeyRound className="mr-2 h-4 w-4" /> Change Password
+                                </Button>
+                            </Link>
+                            <Button variant="outline" size="sm" onClick={handleLogout} disabled={auth.isLoading}>
+                                <LogOut className="mr-2 h-4 w-4" /> {auth.isLoading ? "Logging out..." : "Logout"}
                             </Button>
-                        </Link>
-                        <Button variant="outline" size="sm" onClick={handleLogout} disabled={auth.isLoading}>
-                            <LogOut /> {auth.isLoading ? "Logging out..." : "Logout"}
-                        </Button>
-                    </div>
+                        </div>
                 </header>
 
                 {error && (
@@ -191,17 +200,17 @@ function DashboardComponent() {
                                         key={preset.id}
                                         className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md hover:bg-muted/50 transition-colors"
                                     >
-                                        <div className="mb-2 sm:mb-0">
-                                            <p className="font-medium text-foreground">{preset.name || pathToName(preset.mainPath)}</p>
-                                            <p className="text-xs text-muted-foreground">{preset.mainPath}</p>
+                                        <div className="mb-2 sm:mb-0 flex-grow min-w-0">
+                                            <p className="font-medium text-foreground truncate" title={preset.name}>{preset.name}</p>
+                                            <p className="text-xs text-muted-foreground truncate" title={preset.path}>{preset.path}</p>
                                         </div>
                                         <div className="flex space-x-2 self-end sm:self-center">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => {
-                                                    setActiveDirectoryPath(preset.mainPath);
-                                                    handleSetActiveDirectory(preset.mainPath);
+                                                    setActiveDirectoryPath(preset.path);
+                                                    handleSetActiveDirectory(preset.path);
                                                 }}
                                             >
                                                 <Play /> Play
@@ -220,16 +229,28 @@ function DashboardComponent() {
                         )}
                     </CardContent>
                     <CardFooter className="border-t pt-6">
-                        <div className="flex w-full space-x-2 items-start">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
                             <Input
                                 type="text"
-                                value={newPresetPath}
-                                onChange={e => setNewPresetPath(e.target.value)}
-                                placeholder="Enter absolute path for new preset"
-                                className="flex-grow"
+                                value={newPresetName}
+                                onChange={e => setNewPresetName(e.target.value)}
+                                placeholder="Preset Name (optional)"
+                                className="sm:col-span-2"
                             />
-                            <Button onClick={handleAddPreset}>
-                                <PlusCircle />
+                            <div className="flex space-x-2 items-center sm:col-span-2">
+                                <Input
+                                    type="text"
+                                    value={newPresetPath}
+                                    onChange={e => setNewPresetPath(e.target.value)}
+                                    placeholder="Preset Path (e.g., /Users/name/videos)"
+                                    className="flex-grow"
+                                />
+                                <Button variant="outline" onClick={() => setIsBrowserModalOpen(true)} title="Browse for folder">
+                                    <FolderSearch className="h-4 w-4" /> 
+                                </Button>
+                            </div>
+                            <Button onClick={handleAddPreset} className="w-full sm:col-span-2">
+                                <PlusCircle className="mr-2 h-4 w-4" />
                                 Add Preset
                             </Button>
                         </div>
@@ -264,5 +285,16 @@ function DashboardComponent() {
                 </Card>
             </div>
         </div>
+
+        <DirectoryBrowserModal
+            isOpen={isBrowserModalOpen}
+            onClose={() => setIsBrowserModalOpen(false)}
+            onSelectPath={(selectedPath) => {
+                setNewPresetPath(selectedPath);
+                setIsBrowserModalOpen(false);
+            }}
+            // initialPath can be set here, e.g., to user's home directory if fetched
+            />
+        </>
     );
 }

@@ -160,48 +160,104 @@ export function createServer(win: BrowserWindow): Promise<void> {
         res.json({ code: 200, data: { message: "pong" }, err: null });
     });
 
-    // Get all presets (protected)
-    expressApp.get("/api/presets", authenticateToken, (async (
-        _req: AuthenticatedRequest,
-        res: Response<ApiTypes.PresetsListResponse>,
-    ) => {
-            res.json({ code: 200, data: await loadPresets(), err: null }); // loadPresets now returns PresetItem[]
+    // --- Preset Management Routes ---
+    expressApp.get("/api/presets", authenticateToken, (async (_req: AuthenticatedRequest, res: Response<ApiTypes.PresetsListResponse>) => {
+        const presets = await loadPresets();
+        res.json({ code: 200, data: presets, err: null });
+    }) as any);
+
+    // Browse Directories
+    expressApp.get("/api/browse-directories", authenticateToken, (async (req: AuthenticatedRequest, res: Response<ApiTypes.BrowseDirectoriesResponse>) => {
+        const currentPath = typeof req.query.path === 'string' ? req.query.path : app.getPath('home');
+
+        try {
+            // Security check: Prevent going above the home directory or a predefined root for simplicity
+            // More robust sandboxing might be needed for a production app.
+            const homeDir = app.getPath('home');
+            if (!path.resolve(currentPath).startsWith(path.resolve(homeDir))) {
+                 // Or, if you want to allow browsing other drives/mount points, adjust this logic.
+                 // For now, restrict to home directory and its subdirectories.
+                // We can make this more flexible later, e.g. by listing drives on initial call.
+                if (currentPath !== homeDir && currentPath !== path.dirname(currentPath)) { // Allow listing home itself
+                    // A simple check to allow listing initial drives if currentPath is a root (e.g., 'C:\' or '/')
+                    // This check is very basic and OS-dependent.
+                    // A more robust solution would list mounted drives.
+                    const isRoot = currentPath === path.parse(currentPath).root;
+                    if (!isRoot) {
+                        console.warn(`Attempt to browse outside allowed root: ${currentPath}`);
+                        return res.status(403).json({ code: 403, data: null, err: "Access denied: Cannot browse above home directory." });
+                    }
+                }
+            }
+
+            const entries = await fs.readdir(currentPath, { withFileTypes: true });
+            const directoryEntries: ApiTypes.DirectoryEntry[] = entries
+                .filter(entry => entry.isDirectory())
+                .map(entry => ({
+                    name: entry.name,
+                    path: path.join(currentPath, entry.name),
+                    isDirectory: true,
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+            
+            // Add a way to go "up" one directory
+            if (path.resolve(currentPath) !== path.resolve(homeDir) && currentPath !== path.parse(currentPath).root) {
+                directoryEntries.unshift({
+                    name: ".. (Up)",
+                    path: path.dirname(currentPath),
+                    isDirectory: true,
+                });
+            }
+
+            res.json({ code: 200, data: directoryEntries, err: null });
+        } catch (error: any) {
+            console.error(`Error browsing directory ${currentPath}:`, error);
+            if (error.code === 'EACCES') {
+                res.status(403).json({ code: 403, data: null, err: `Permission denied for ${currentPath}.` });
+            } else if (error.code === 'ENOENT') {
+                res.status(404).json({ code: 404, data: null, err: `Directory not found: ${currentPath}.` });
+            } else {
+                res.status(500).json({ code: 500, data: null, err: `Error browsing directory: ${error.message}` });
+            }
+        }
     }) as any);
 
     // Add a new preset
     expressApp.post("/api/presets", authenticateToken, (async (
-        req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.AddPresetRequest>,
+        req: AuthenticatedRequest, // Corrected: AuthenticatedRequest is not generic
         res: Response<ApiTypes.PresetMutationSuccessResponse>,
     ) => {
-        const { mainPath, order, name } = req.body;
+        // Manually type req.body for clarity, though Express often infers it with express.json() middleware
+        const { path: presetPath, order, name: presetName } = req.body as ApiTypes.AddPresetRequest;
+        // const { path: presetPath, order, name: presetName } = req.body; // This line is now part of the corrected block above
 
-        if (!mainPath || typeof mainPath !== "string") {
-            res.status(400).json({ code: 400, data: null, err: "Invalid mainPath provided." });
+        if (!presetPath) {
+            res.status(400).json({ code: 400, data: null, err: "Preset path is required." });
             return;
         }
 
         try {
-            const stats = await fs.stat(mainPath);
+            const stats = await fs.stat(presetPath);
             if (!stats.isDirectory()) {
-                res.status(400).json({ code: 400, data: null, err: "Provided mainPath is not a directory." });
+                res.status(400).json({ code: 400, data: null, err: "Provided path is not a directory." });
                 return;
             }
         } catch (error) {
-            res.status(400).json({ code: 400, data: null, err: "mainPath does not exist or is inaccessible." });
+            res.status(400).json({ code: 400, data: null, err: "Directory path does not exist or is inaccessible." });
             return;
         }
 
         const currentPresets = await loadPresets();
-        if (currentPresets.some(p => p.mainPath === mainPath)) {
-            res.status(409).json({ code: 409, data: null, err: "Preset with this mainPath already exists." });
+        if (currentPresets.some(p => p.path === presetPath)) { // Check using 'path'
+            res.status(409).json({ code: 409, data: null, err: "This preset path already exists." });
             return;
         }
 
         const newPreset: ApiTypes.PresetItem = {
-            id: randomUUID(),
-            mainPath,
-            order: order || 'shuffle', // Default to shuffle if not provided
-            name: name || mainPath.split(path.sep).pop() || mainPath // Default name from path if not provided
+            id: randomUUID(), // Generate a unique ID
+            path: presetPath, // Use 'path'
+            order: order || "shuffle", // Default to shuffle if not provided
+            name: presetName || path.basename(presetPath), // Use folder name if name not provided, or provided name
         };
 
         const updatedPresets = [...currentPresets, newPreset];
@@ -216,8 +272,8 @@ export function createServer(win: BrowserWindow): Promise<void> {
     ) => {
         const { id: idToDelete } = req.body;
 
-        if (!idToDelete || typeof idToDelete !== 'string') {
-            res.status(400).json({ code: 400, data: null, err: "Invalid or missing ID provided for deletion." });
+        if (!idToDelete) {
+            res.status(400).json({ code: 400, data: null, err: "Preset ID to delete is required." });
             return;
         }
 

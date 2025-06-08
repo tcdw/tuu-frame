@@ -2,14 +2,6 @@ import * as ApiTypes from "../../../mv-player/src/shared-api-types";
 import { apiClient } from "../utils/request";
 import HmacSHA512 from "crypto-js/hmac-sha512";
 
-// Interface for Preset objects used within the UI (App.tsx)
-// The API for GET /presets currently returns string[] (paths)
-// Note: UIPreset can remain if it serves a UI-specific purpose distinct from raw API responses.
-export interface UIPreset {
-    path: string;
-    name: string; // UI can derive name from path if not provided by API
-}
-
 /**
  * Fetches the list of preset paths from the server.
  * API returns: string[]
@@ -105,3 +97,13 @@ export async function changePasswordApi(payload: ApiTypes.ChangeCredentialsReque
 }
 
 // The existing setActiveDirectory function was here. It's defined earlier in the file now.
+
+/**
+ * Fetches directory listings from the server.
+ * API expects optional query param: ?path=/some/path
+ * API returns: DirectoryEntry[]
+ */
+export async function browseDirectories(currentPath?: string): Promise<ApiTypes.BrowseDirectoriesData> {
+    const params = currentPath ? { path: currentPath } : {};
+    return apiClient.get<ApiTypes.BrowseDirectoriesResponse, ApiTypes.BrowseDirectoriesData>("/browse-directories", { params });
+}

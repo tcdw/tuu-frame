@@ -20,7 +20,7 @@ export type PresetOrderType = "shuffle" | "normal" | string;
 
 export interface PresetItem {
     id: string;          // Unique identifier for the preset
-    mainPath: string;    // The main directory path for this preset
+    path: string;        // The directory path for this preset
     order: PresetOrderType; // Playback order (e.g., shuffle, normal)
     name?: string;       // Optional user-defined name for the preset
     // Add other future properties here, e.g.:
@@ -33,7 +33,7 @@ export type PresetsListData = PresetItem[];
 export type PresetsListResponse = ApiResponse<PresetsListData>;
 
 export interface AddPresetRequest {
-    mainPath: string;
+    path: string;
     order?: PresetOrderType;
     name?: string;
 }
@@ -88,6 +88,16 @@ export interface LoginSuccessData {
     message?: string;
 }
 export type LoginResponse = ApiResponse<LoginSuccessData>;
+
+// --- /api/browse-directories ---
+export interface DirectoryEntry {
+    name: string;
+    path: string;
+    isDirectory: boolean;
+}
+
+export type BrowseDirectoriesData = DirectoryEntry[];
+export type BrowseDirectoriesResponse = ApiResponse<BrowseDirectoriesData>;
 
 // --- /api/auth/change-credentials ---
 // This is what the UI form will produce (plaintext passwords)

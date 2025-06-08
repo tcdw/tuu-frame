@@ -96,7 +96,10 @@ export interface DirectoryEntry {
     isDirectory: boolean;
 }
 
-export type BrowseDirectoriesData = DirectoryEntry[];
+export interface BrowseDirectoriesData {
+  path: string; // The full path of the directory that was browsed
+  entries: DirectoryEntry[]; // The list of entries in that directory
+}
 export type BrowseDirectoriesResponse = ApiResponse<BrowseDirectoriesData>;
 
 // --- /api/auth/change-credentials ---

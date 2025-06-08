@@ -34,15 +34,8 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
             setError(null);
             try {
                 const result = await browseDirectories(pathToList);
-                setDirectories(result);
-                // Determine the actual path that was listed by the API
-                // If '.. (Up)' is present, its path is the listed directory.
-                // Otherwise, if pathToList was provided, use that.
-                // If neither, it implies API returned home, but we don't know its exact path from response alone.
-                // This logic might need refinement if API behavior for root listing is ambiguous.
-                const upEntry = result.find(d => d.name === ".. (Up)");
-                const listedPath = upEntry ? upEntry.path.substring(0, upEntry.path.lastIndexOf("/")) : pathToList;
-                setCurrentPath(listedPath || initialPath || "/");
+                setDirectories(result.entries);
+                setCurrentPath(result.path);
             } catch (err: any) {
                 console.error("Error browsing directories:", err);
                 setError(err.message || "Failed to load directory contents.");

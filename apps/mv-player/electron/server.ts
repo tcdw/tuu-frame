@@ -209,7 +209,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 });
             }
 
-            res.json({ code: 200, data: directoryEntries, err: null });
+            res.json({ code: 200, data: { path: currentPath, entries: directoryEntries }, err: null });
         } catch (error: any) {
             console.error(`Error browsing directory ${currentPath}:`, error);
             if (error.code === 'EACCES') {

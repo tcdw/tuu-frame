@@ -1,7 +1,8 @@
 import axios, { AxiosError, type AxiosResponse } from "axios";
 import type { ApiResponse } from "../../../mv-player/src/shared-api-types";
 
-export const API_BASE_URL = process.env.NODE_ENV === "development" ? "http://localhost:15678/api" : "/api";
+// export const API_BASE_URL = process.env.NODE_ENV === "development" ? "http://localhost:15678/api" : "/api";
+export const API_BASE_URL = "/api";
 
 // JWT storage key (should match the one in auth.tsx)
 const JWT_STORAGE_KEY = "mv_remote_jwt_token";

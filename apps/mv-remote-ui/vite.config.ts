@@ -19,5 +19,14 @@ export default defineConfig({
     },
     server: {
         port: 5999,
+        host: '0.0.0.0', // Expose server to the LAN
+        proxy: {
+            // Proxy /api requests to the mv-player backend dev server
+            '/api': {
+                target: 'http://localhost:15678', // Your mv-player dev server
+                changeOrigin: true, // Recommended for virtual hosted sites
+                // No rewrite needed as '/api' is part of the path on both servers
+            },
+        },
     },
 });

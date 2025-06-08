@@ -132,6 +132,18 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   **Electron App Behavior (`mv-player`):
     *   **macOS Quit on Window Close:** The Electron app now quits when all windows are closed on macOS, aligning behavior with other platforms.
 
+*   **Remote Playback Status API & Dev Proxy Setup (June 8th, 2025):**
+    *   **Playback Status API (`mv-player` & Shared):**
+        *   Implemented a `GET /api/player/status` endpoint in `mv-player` to return the current playback state (playing/paused).
+        *   The Electron main process now caches playback status, updated via IPC from the renderer and optimistically on play/pause toggle.
+        *   Added shared API types (`PlayerStatusData`, `PlayerStatusResponse`) for consistent data structure.
+    *   **Remote UI Playback Status (`mv-remote-ui`):**
+        *   The `/monitor` page now fetches and displays the live playback status from the `mv-player`.
+        *   The Play/Pause button dynamically updates its icon based on the actual playback state.
+    *   **Vite Dev Server Proxy & LAN Exposure (`mv-remote-ui`):**
+        *   Configured the `mv-remote-ui` Vite development server to proxy `/api` requests to the `mv-player` backend (running on `http://localhost:15678`). This streamlines development by avoiding the need for full remote UI rebuilds when only backend API changes occur.
+        *   Exposed the Vite dev server on the LAN (`host: '0.0.0.0'`) for easier testing on multiple devices.
+
 ### Potential Future Enhancements:
 
 1.  **Enhance Remote UI (`mv-remote-ui`):**
@@ -148,4 +160,4 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-08T20:20:58+08:00.
+This document was last updated on: 2025-06-08T21:51:26+08:00.

@@ -122,3 +122,9 @@ export interface ChangeCredentialsSuccessData {
     token?: string; // Token is returned if username didn't change but password did
 }
 export type ChangeCredentialsResponse = ApiResponse<ChangeCredentialsSuccessData>;
+
+// --- /api/player/* ---
+export interface PlayerControlSuccessData {
+    message: string;
+}
+export type PlayerControlResponse = ApiResponse<PlayerControlSuccessData>;

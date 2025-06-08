@@ -11,12 +11,19 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as MonitorImport } from './routes/monitor'
 import { Route as LoginImport } from './routes/login'
 import { Route as DashboardImport } from './routes/dashboard'
 import { Route as IndexImport } from './routes/index'
 import { Route as SettingsChangePasswordImport } from './routes/settings.change-password'
 
 // Create/Update Routes
+
+const MonitorRoute = MonitorImport.update({
+  id: '/monitor',
+  path: '/monitor',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const LoginRoute = LoginImport.update({
   id: '/login',
@@ -67,6 +74,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/monitor': {
+      id: '/monitor'
+      path: '/monitor'
+      fullPath: '/monitor'
+      preLoaderRoute: typeof MonitorImport
+      parentRoute: typeof rootRoute
+    }
     '/settings/change-password': {
       id: '/settings/change-password'
       path: '/settings/change-password'
@@ -83,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/monitor': typeof MonitorRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
 }
 
@@ -90,6 +105,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/monitor': typeof MonitorRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
 }
 
@@ -98,15 +114,27 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/monitor': typeof MonitorRoute
   '/settings/change-password': typeof SettingsChangePasswordRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/login' | '/settings/change-password'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/monitor'
+    | '/settings/change-password'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/login' | '/settings/change-password'
-  id: '__root__' | '/' | '/dashboard' | '/login' | '/settings/change-password'
+  to: '/' | '/dashboard' | '/login' | '/monitor' | '/settings/change-password'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/monitor'
+    | '/settings/change-password'
   fileRoutesById: FileRoutesById
 }
 
@@ -114,6 +142,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  MonitorRoute: typeof MonitorRoute
   SettingsChangePasswordRoute: typeof SettingsChangePasswordRoute
 }
 
@@ -121,6 +150,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  MonitorRoute: MonitorRoute,
   SettingsChangePasswordRoute: SettingsChangePasswordRoute,
 }
 
@@ -137,6 +167,7 @@ export const routeTree = rootRoute
         "/",
         "/dashboard",
         "/login",
+        "/monitor",
         "/settings/change-password"
       ]
     },
@@ -148,6 +179,9 @@ export const routeTree = rootRoute
     },
     "/login": {
       "filePath": "login.tsx"
+    },
+    "/monitor": {
+      "filePath": "monitor.tsx"
     },
     "/settings/change-password": {
       "filePath": "settings.change-password.tsx"

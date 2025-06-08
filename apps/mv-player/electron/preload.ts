@@ -6,5 +6,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     openDirectory: () => ipcRenderer.invoke("dialog:openDirectory"),
     onUpdatePlaylist: (callback: (videoFiles: string[]) => void) =>
         ipcRenderer.on("main:updatePlaylist", (_event, value) => callback(value)),
+    onPlayerCommand: (callback: (command: string, ...args: any[]) => void) =>
+        ipcRenderer.on("main:playerCommand", (_event, command, ...args) => callback(command, ...args)),
     // We can expose other specific APIs here as needed
 });

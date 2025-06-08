@@ -6,6 +6,7 @@ interface ElectronAPI {
     openFile: () => Promise<string | undefined>;
     openDirectory: () => Promise<string[] | undefined>;
     onUpdatePlaylist: (callback: (videoFiles: string[]) => void) => void;
+    onPlayerCommand: (callback: (command: string, ...args: any[]) => void) => void;
 }
 
 declare var electronAPI: ElectronAPI;

@@ -107,3 +107,25 @@ export async function browseDirectories(currentPath?: string): Promise<ApiTypes.
     const params = currentPath ? { path: currentPath } : {};
     return apiClient.get<ApiTypes.BrowseDirectoriesResponse, ApiTypes.BrowseDirectoriesData>("/browse-directories", { params });
 }
+
+// --- Player Control API Calls ---
+
+/**
+ * Sends a command to toggle play/pause on the player.
+ */
+export async function togglePlayPauseRemote(): Promise<ApiTypes.PlayerControlSuccessData> {
+    return apiClient.post<
+        ApiTypes.PlayerControlResponse, // This is ApiResponse<PlayerControlSuccessData>
+        ApiTypes.PlayerControlSuccessData
+    >("/player/toggle-play-pause");
+}
+
+/**
+ * Sends a command to play the next track on the player.
+ */
+export async function nextTrackRemote(): Promise<ApiTypes.PlayerControlSuccessData> {
+    return apiClient.post<
+        ApiTypes.PlayerControlResponse, // This is ApiResponse<PlayerControlSuccessData>
+        ApiTypes.PlayerControlSuccessData
+    >("/player/next-track");
+}

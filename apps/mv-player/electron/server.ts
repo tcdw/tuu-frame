@@ -160,6 +160,51 @@ export function createServer(win: BrowserWindow): Promise<void> {
         res.json({ code: 200, data: { message: "pong" }, err: null });
     });
 
+    // --- MJPEG Monitoring Stream ---
+    expressApp.get("/api/monitor/snapshot.jpg", authenticateToken, async (_req: AuthenticatedRequest, res: Response) => {
+        if (!win || win.isDestroyed()) {
+            return res.status(503).send("Player window not available.");
+        }
+
+        try {
+            if (!win || win.isDestroyed() || !win.webContents || win.webContents.isDestroyed()) {
+                return res.status(503).send("Player window not available to capture.");
+            }
+
+            const image = await win.webContents.capturePage();
+            if (image.isEmpty()) {
+                // Send a 204 No Content if the image is empty, or a placeholder?
+                // For now, let's send 204, client can decide how to handle.
+                if (process.env.NODE_ENV === "development") {
+                    console.log("[Snapshot] Captured empty image.");
+                }
+                return res.status(204).end(); 
+            }
+
+            const jpeg = image.toJPEG(70); // Quality 0-100
+
+            if (process.env.NODE_ENV === "development") {
+                console.log("[Snapshot] Sending one frame. Size: " + jpeg.length + " bytes. Time: " + new Date().getTime());
+            }
+
+            res.setHeader('Content-Type', 'image/jpeg');
+            res.setHeader('Content-Length', jpeg.length.toString());
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            res.send(jpeg);
+
+        } catch (error) {
+            console.error("[Snapshot] Error capturing or sending frame:", error);
+            if (!res.headersSent) {
+                res.status(500).send("Error capturing frame.");
+            } else if (!res.writableEnded) {
+                // If headers were sent but data wasn't, try to end the response gracefully.
+                try { res.end(); } catch (e) { console.error("[Snapshot] Error ending response on error:", e); }
+            }
+        }
+    });
+
     // --- Preset Management Routes ---
     expressApp.get("/api/presets", authenticateToken, (async (_req: AuthenticatedRequest, res: Response<ApiTypes.PresetsListResponse>) => {
         const presets = await loadPresets();
@@ -330,6 +375,35 @@ export function createServer(win: BrowserWindow): Promise<void> {
         } else {
             console.error("Main window (win) not available to send IPC message.");
             res.status(500).json({ code: 500, data: null, err: "Main window not available to update playlist." });
+        }
+    }) as any);
+
+    // --- Player Control Routes ---
+    expressApp.post("/api/player/toggle-play-pause", authenticateToken, (async (
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.PlayerControlResponse>,
+    ) => {
+        if (win && !win.isDestroyed()) {
+            win.webContents.send("main:playerCommand", "toggle-play-pause");
+            console.log("[API] Sent 'toggle-play-pause' command to renderer.");
+            res.json({ code: 200, data: { message: "Toggle play/pause command sent." }, err: null });
+        } else {
+            console.error("[API] Main window not available for 'toggle-play-pause'.");
+            res.status(503).json({ code: 503, data: null, err: "Player window not available." });
+        }
+    }) as any);
+
+    expressApp.post("/api/player/next-track", authenticateToken, (async (
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.PlayerControlResponse>,
+    ) => {
+        if (win && !win.isDestroyed()) {
+            win.webContents.send("main:playerCommand", "next-track");
+            console.log("[API] Sent 'next-track' command to renderer.");
+            res.json({ code: 200, data: { message: "Next track command sent." }, err: null });
+        } else {
+            console.error("[API] Main window not available for 'next-track'.");
+            res.status(503).json({ code: 503, data: null, err: "Player window not available." });
         }
     }) as any);
 

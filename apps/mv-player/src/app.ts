@@ -56,6 +56,25 @@ function playRandomVideo(
     videoElement.play().catch(error => console.error("Error trying to play video:", error));
 }
 
+function togglePlayPause() {
+    if (videoElement) {
+        if (videoElement.paused || videoElement.ended) {
+            videoElement.play().catch(error => console.error("Error trying to play video:", error));
+            console.log("Player: Play command received");
+        } else {
+            videoElement.pause();
+            console.log("Player: Pause command received");
+        }
+    } else {
+        console.error("Player: Video element not found for togglePlayPause.");
+    }
+}
+
+function playNextTrack() {
+    console.log("Player: Next track command received");
+    playRandomVideo(currentPlaylist, currentVideoPath);
+}
+
 function handleVideoEnded() {
     console.log("Video ended, playing next random video from playlist.");
     playRandomVideo(currentPlaylist, currentVideoPath);
@@ -81,6 +100,25 @@ if (globalThis.electronAPI && typeof globalThis.electronAPI.onUpdatePlaylist ===
     });
 } else {
     console.error("electronAPI.onUpdatePlaylist is not available.");
+}
+
+// Listen for player commands from the main process
+if (globalThis.electronAPI && typeof globalThis.electronAPI.onPlayerCommand === "function") {
+    globalThis.electronAPI.onPlayerCommand((command: string) => {
+        console.log("Main process sent player command:", command);
+        switch (command) {
+            case 'toggle-play-pause':
+                togglePlayPause();
+                break;
+            case 'next-track':
+                playNextTrack();
+                break;
+            default:
+                console.warn("Player: Unknown command received:", command);
+        }
+    });
+} else {
+    console.error("electronAPI.onPlayerCommand is not available.");
 }
 
 // Initial state message

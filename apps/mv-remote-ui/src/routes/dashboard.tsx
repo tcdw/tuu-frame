@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuthStore } from "../auth";
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from "../services/api";
+
 import * as ApiTypes from "../../../mv-player/src/shared-api-types";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import {
     FolderOpen,
     ListVideo,
     FolderSearch,
+    Tv2 as MonitorIcon, // For the link to monitor page
 } from "lucide-react";
 import { DirectoryBrowserModal } from "@/components/DirectoryBrowserModal";
 
@@ -304,6 +306,26 @@ function DashboardComponent() {
                                     Set & Play
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center">
+                                <MonitorIcon className="mr-2 h-5 w-5 text-primary" />
+                                Player Monitor
+                            </CardTitle>
+                            <CardDescription>
+                                View a live stream of the player window.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Link to="/monitor">
+                                <Button className="w-full">
+                                    <MonitorIcon className="mr-2 h-4 w-4" />
+                                    Open Monitor Page
+                                </Button>
+                            </Link>
                         </CardContent>
                     </Card>
                 </div>

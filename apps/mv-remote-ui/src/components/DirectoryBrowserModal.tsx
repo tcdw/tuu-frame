@@ -11,7 +11,6 @@ import {
     DialogFooter,
     DialogClose,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Folder, ArrowUpCircle, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
@@ -22,40 +21,39 @@ interface DirectoryBrowserModalProps {
     initialPath?: string;
 }
 
-export function DirectoryBrowserModal({
-    isOpen,
-    onClose,
-    onSelectPath,
-    initialPath,
-}: DirectoryBrowserModalProps) {
+export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPath }: DirectoryBrowserModalProps) {
     const [currentPath, setCurrentPath] = useState<string>("");
     const [directories, setDirectories] = useState<ApiTypes.DirectoryEntry[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false); // Overall loading for initial/empty states
+    const [loadingItemPath, setLoadingItemPath] = useState<string | null>(null); // For item-specific loading
     const [error, setError] = useState<string | null>(null);
 
-    const fetchPathContents = useCallback(async (pathToList: string | undefined) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // If pathToList is undefined, the API defaults to home, which is good for initial load.
-            const result = await browseDirectories(pathToList);
-            setDirectories(result);
-            if (pathToList) setCurrentPath(pathToList); // Only update currentPath if one was actually listed
-            else {
-                 // If no path was given, the API returns home. We need to find out what that was.
-                 // For now, assume the first '..' entry if present, or we need another way to get the initial path.
-                 // This is a bit of a hack. The API should ideally return the path it listed.
-                 // For now, if initialPath is set, use it.
-                 setCurrentPath(initialPath || result.find(d => d.name === ".. (Up)")?.path || "/");
+    const fetchPathContents = useCallback(
+        async (pathToList: string | undefined) => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const result = await browseDirectories(pathToList);
+                setDirectories(result);
+                // Determine the actual path that was listed by the API
+                // If '.. (Up)' is present, its path is the listed directory.
+                // Otherwise, if pathToList was provided, use that.
+                // If neither, it implies API returned home, but we don't know its exact path from response alone.
+                // This logic might need refinement if API behavior for root listing is ambiguous.
+                const upEntry = result.find(d => d.name === ".. (Up)");
+                const listedPath = upEntry ? upEntry.path.substring(0, upEntry.path.lastIndexOf("/")) : pathToList;
+                setCurrentPath(listedPath || initialPath || "/");
+            } catch (err: any) {
+                console.error("Error browsing directories:", err);
+                setError(err.message || "Failed to load directory contents.");
+                setDirectories([]);
+            } finally {
+                setIsLoading(false);
+                setLoadingItemPath(null); // Clear item-specific loader regardless of outcome
             }
-        } catch (err: any) {
-            console.error("Error browsing directories:", err);
-            setError(err.message || "Failed to load directory contents.");
-            setDirectories([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [initialPath]);
+        },
+        [initialPath],
+    );
 
     useEffect(() => {
         if (isOpen) {
@@ -70,6 +68,10 @@ export function DirectoryBrowserModal({
     }, [isOpen, initialPath, fetchPathContents]);
 
     const handleDirectoryClick = (dir: ApiTypes.DirectoryEntry) => {
+        if (loadingItemPath === dir.path) return; // Prevent re-click if already loading this item
+        setLoadingItemPath(dir.path);
+        // No need to set setIsLoading(true) here as fetchPathContents handles its own general loading state
+        // and we use loadingItemPath for specific item indication.
         fetchPathContents(dir.path);
     };
 
@@ -99,38 +101,45 @@ export function DirectoryBrowserModal({
                     </Alert>
                 )}
 
-                <ScrollArea className="h-[300px] w-full rounded-md border p-4 my-4">
-                    {isLoading && !directories.length ? (
+                <div className="h-[300px] w-full min-w-0 rounded-md border p-3 my-4 overflow-y-scroll">
+                    {isLoading && directories.length === 0 && !loadingItemPath ? (
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             <p className="ml-2">Loading directories...</p>
                         </div>
                     ) : directories.length === 0 && !isLoading ? (
                         <div className="flex items-center justify-center h-full">
-                             <p className="text-muted-foreground">No sub-directories found.</p>
+                            <p className="text-muted-foreground">No sub-directories found.</p>
                         </div>
                     ) : (
-                        <ul className="space-y-1">
-                            {directories.map((dir) => (
-                                <li key={dir.path}>
+                        <ul className="flex flex-col gap-1 items-stretch min-w-0">
+                            {directories.map(dir => (
+                                <li key={dir.name + dir.path} className={"contents"}>
                                     <Button
                                         variant="ghost"
-                                        className="w-full justify-start text-left h-auto py-2 px-3"
+                                        className="min-w-0 w-full justify-start text-left h-auto py-2 px-3 overflow-hidden flex items-center space-x-2"
                                         onClick={() => handleDirectoryClick(dir)}
                                         title={dir.path}
+                                        disabled={loadingItemPath === dir.path}
                                     >
-                                        {dir.name === ".. (Up)" ? (
-                                            <ArrowUpCircle className="mr-2 h-5 w-5 text-muted-foreground" />
+                                        {/* Icon with flex-shrink: 0 */}
+                                        {loadingItemPath === dir.path ? (
+                                            <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />
+                                        ) : dir.name === ".. (Up)" ? (
+                                            <ArrowUpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                                         ) : (
-                                            <Folder className="mr-2 h-5 w-5 text-blue-500" />
+                                            <Folder className="h-5 w-5 text-blue-500 flex-shrink-0" />
                                         )}
-                                        <span className="truncate">{dir.name}</span>
+                                        {/* Text wrapper that grows and shrinks */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="truncate text-sm">{dir.name}</p>
+                                        </div>
                                     </Button>
                                 </li>
                             ))}
                         </ul>
                     )}
-                </ScrollArea>
+                </div>
 
                 <DialogFooter className="sm:justify-between">
                     <DialogClose asChild>
@@ -138,11 +147,7 @@ export function DirectoryBrowserModal({
                             Cancel
                         </Button>
                     </DialogClose>
-                    <Button 
-                        type="button" 
-                        onClick={handleSelectCurrentPath} 
-                        disabled={isLoading || !currentPath}
-                    >
+                    <Button type="button" onClick={handleSelectCurrentPath} disabled={isLoading || !currentPath}>
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Select Current Path
                     </Button>

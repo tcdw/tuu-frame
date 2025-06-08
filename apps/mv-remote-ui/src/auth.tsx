@@ -1,24 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import type { ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { create } from "zustand";
 import * as api from "./services/api";
 import type { LoginRequest, ChangeCredentialsRequest } from "../../mv-player/src/shared-api-types";
-
-interface AuthContextType {
-    isAuthenticated: boolean;
-    username: string | null;
-    login: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-    logout: () => Promise<void>;
-    changePassword: (
-        currentPassword: string,
-        newPassword: string,
-        newUsername?: string,
-    ) => Promise<{ success: boolean; error?: string; message?: string }>;
-    isLoading: boolean;
-    isLoadingPasswordChange: boolean; // Added for specific password change loading state
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const JWT_STORAGE_KEY = "mv_remote_jwt_token";
 
@@ -32,153 +14,183 @@ interface JwtPayload {
 const parseJwt = (token: string): JwtPayload | null => {
     try {
         const base64Url = token.split(".")[1];
+        if (!base64Url) {
+            // Invalid token structure
+            localStorage.removeItem(JWT_STORAGE_KEY);
+            return null;
+        }
         const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
         const jsonPayload = decodeURIComponent(
             atob(base64)
                 .split("")
-                .map(function (c) {
-                    return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-                })
+                .map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
                 .join(""),
         );
-        return JSON.parse(jsonPayload) as JwtPayload;
+        const payload = JSON.parse(jsonPayload) as JwtPayload;
+        // Check for expiration
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+            console.warn("JWT token has expired");
+            localStorage.removeItem(JWT_STORAGE_KEY);
+            return null;
+        }
+        return payload;
     } catch (e) {
-        console.error("Failed to parse JWT", e);
+        console.error("Failed to parse JWT:", e);
+        localStorage.removeItem(JWT_STORAGE_KEY); // Remove invalid/corrupted token
         return null;
     }
 };
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [username, setUsername] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true); // General loading for auth status check
-    const [isLoadingPasswordChange, setIsLoadingPasswordChange] = useState(false); // Specific for password change
-    const navigate = useNavigate();
+interface AuthState {
+    isAuthenticated: boolean;
+    username: string | null;
+    isLoadingInitial: boolean; // For the very first load/token check
+    isLoadingLogin: boolean;
+    isLoadingPasswordChange: boolean;
+}
 
-    useEffect(() => {
+interface AuthActions {
+    initializeAuth: () => void;
+    login: (user: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+    logout: () => Promise<void>; // Navigation will be handled by the component
+    changePassword: (
+        currentPassword: string,
+        newPassword: string,
+        newUsername?: string,
+    ) => Promise<{ success: boolean; error?: string; message?: string }>;
+}
+
+export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
+    isAuthenticated: false,
+    username: null,
+    isLoadingInitial: true, // Start true, initializeAuth will set it to false
+    isLoadingLogin: false,
+    isLoadingPasswordChange: false,
+
+    initializeAuth: () => {
+        // No need to set isLoadingInitial to true here, it's true by default
         const token = localStorage.getItem(JWT_STORAGE_KEY);
         if (token) {
-            const decoded = parseJwt(token);
-            if (decoded && decoded.exp && decoded.exp * 1000 > Date.now()) {
-                setUsername(decoded.username);
-                setIsAuthenticated(true);
+            const decoded = parseJwt(token); // parseJwt now handles expiration and removal
+            if (decoded) {
+                set({
+                    isAuthenticated: true,
+                    username: decoded.username,
+                    isLoadingInitial: false,
+                });
             } else {
-                // Token exists but is invalid or expired
-                localStorage.removeItem(JWT_STORAGE_KEY);
-                setUsername(null);
-                setIsAuthenticated(false);
+                // Token was invalid or expired, parseJwt handled localStorage.removeItem
+                set({
+                    isAuthenticated: false,
+                    username: null,
+                    isLoadingInitial: false,
+                });
             }
+        } else {
+            // No token found
+            set({
+                isAuthenticated: false,
+                username: null,
+                isLoadingInitial: false,
+            });
         }
-        setIsLoading(false);
-    }, []);
+    },
 
-    const login = async (user: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-        setIsLoading(true);
+    login: async (user, pass) => {
+        set({ isLoadingLogin: true });
         try {
             const loginPayload: LoginRequest = { username: user, password: pass };
-            const data = await api.loginUser(loginPayload); // loginUser now returns LoginSuccessData or throws
+            const data = await api.loginUser(loginPayload);
 
             localStorage.setItem(JWT_STORAGE_KEY, data.token);
             const decoded = parseJwt(data.token);
-            setUsername(decoded?.username || null);
-            setIsAuthenticated(true);
-            setIsLoading(false);
+            set({
+                isAuthenticated: true,
+                username: decoded?.username || null,
+                isLoadingLogin: false,
+            });
             return { success: true };
         } catch (error: any) {
-            console.error("Login error in AuthProvider:", error);
-            setIsAuthenticated(false);
-            setUsername(null);
-            setIsLoading(false);
-            // error.message comes from apiClient's error handling
+            localStorage.removeItem(JWT_STORAGE_KEY); // Ensure token is cleared on failed login
+            set({
+                isAuthenticated: false,
+                username: null,
+                isLoadingLogin: false,
+            });
             return { success: false, error: error.message || "Login failed" };
         }
-    };
+    },
 
-    const logout = async (): Promise<void> => {
-        setIsLoading(true);
-        // Note: The actual API call for logout is best-effort.
-        // If you have a specific api.logoutUser() function, you can call it here.
-        // For now, we'll keep the client-side token removal as the primary mechanism.
-        // Consider adding an api.logoutUser() in services/api.ts if server-side session invalidation is critical.
-        try {
-            const token = localStorage.getItem(JWT_STORAGE_KEY);
-            if (token) {
-                // Example: await api.logoutUser(); // If you implement this
-                // For now, just logging out locally
-            }
-        } catch (error) {
-            console.error("Logout API error (if implemented):", error);
-        }
+    logout: async () => {
+        // No specific loading state for logout in original, can add if needed
         localStorage.removeItem(JWT_STORAGE_KEY);
-        setIsAuthenticated(false);
-        setUsername(null);
-        setIsLoading(false);
-        navigate({ to: "/login" });
-    };
+        set({
+            isAuthenticated: false,
+            username: null,
+            // Optionally reset other states like isLoadingLogin: false, etc.
+        });
+        // Navigation is handled by the component calling this action.
+    },
 
-    const changePassword = async (
-        currentPassword: string,
-        newPassword: string, // Kept as string, can be empty if not changing password
-        newUsername?: string,
-    ): Promise<{ success: boolean; error?: string; message?: string }> => {
-        setIsLoadingPasswordChange(true);
-
+    changePassword: async (currentPassword, newPassword, newUsername) => {
+        set({ isLoadingPasswordChange: true });
         const changePayload: ChangeCredentialsRequest = {
             currentPassword,
-            ...(newPassword && { newPassword }), // Add if newPassword is not empty
-            ...(newUsername && { newUsername }), // Add if newUsername is not empty
+            ...(newPassword && { newPassword }),
+            ...(newUsername && { newUsername }),
         };
 
         try {
-            const data = await api.changePasswordApi(changePayload); // changePasswordApi returns ChangeCredentialsSuccessData
+            const data = await api.changePasswordApi(changePayload);
+            let newAuthPartialState: Partial<Pick<AuthState, "isAuthenticated" | "username">> = {};
 
-            // If username changed, server asks to re-login, so clear local token.
-            // The server message 'Please log in again with your new credentials.' indicates username change.
             if (data.message?.includes("Please log in again")) {
                 localStorage.removeItem(JWT_STORAGE_KEY);
-                setIsAuthenticated(false);
-                setUsername(null);
-                // Optionally navigate to login: navigate({ to: "/login" });
+                newAuthPartialState = { isAuthenticated: false, username: null };
             } else if (data.token) {
-                // Token is returned if only password changed (username unchanged)
                 localStorage.setItem(JWT_STORAGE_KEY, data.token);
                 const decoded = parseJwt(data.token);
-                // Username should be the same as before if only password changed,
-                // but if newUsername was part of a successful non-re-login flow (server logic dependent),
-                // this would update it.
-                setUsername(decoded?.username || username); // Keep old username if token doesn't yield one
-                setIsAuthenticated(true);
+                newAuthPartialState = {
+                    isAuthenticated: true,
+                    username: decoded?.username || get().username, // Keep old username if token doesn't yield one
+                };
             } else {
-                // If only username changed and server didn't ask to re-login (and no new token)
-                // or if only password changed but server didn't issue a new token (unlikely for this setup)
-                // We might need to re-fetch user info or re-evaluate state.
-                // For now, assume if username changed, re-login is required.
-                // If only password changed, a new token should be issued.
-                // If newUsername was provided and successful, update local username state if not re-logging in.
+                // This case handles if only username changed and server didn't force re-login / issue new token.
+                // Or if password changed but server didn't issue new token (less likely).
                 if (newUsername && !data.message?.includes("Please log in again")) {
-                    setUsername(newUsername);
+                    newAuthPartialState = { username: newUsername }; // Update username if it changed and no re-login needed
                 }
             }
+            set({ ...newAuthPartialState, isLoadingPasswordChange: false });
             return { success: true, message: data.message };
         } catch (error: any) {
-            console.error("Change credentials error in AuthProvider:", error);
+            set({ isLoadingPasswordChange: false });
             return { success: false, error: error.message || "Failed to change credentials" };
-        } finally {
-            setIsLoadingPasswordChange(false);
         }
-    };
+    },
+}));
 
-    return (
-        <AuthContext.Provider value={{ isAuthenticated, username, login, logout, changePassword, isLoading, isLoadingPasswordChange }}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-};
+// How to initialize:
+// In your main app component (e.g., RootComponent in __root.tsx), call initializeAuth:
+//
+// import { useEffect } from 'react';
+// import { useAuthStore } from './auth'; // Adjust path as needed
+//
+// export function RootComponent() {
+//   const initializeAuth = useAuthStore((state) => state.initializeAuth);
+//   const isLoadingInitial = useAuthStore((state) => state.isLoadingInitial);
+//
+//   useEffect(() => {
+//     initializeAuth();
+//   }, [initializeAuth]);
+//
+//   if (isLoadingInitial) {
+//     return <div>Loading authentication...</div>; // Or your app shell/spinner
+//   }
+//
+//   return (
+//     <>
+//       {/* ... rest of your root component, e.g., <Outlet /> ... */}
+//     </>
+//   );
+// }

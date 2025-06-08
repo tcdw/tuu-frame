@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "../auth";
+import { useAuthStore } from "../auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,12 +23,13 @@ function LoginComponent() {
         formState: { errors },
     } = useForm<LoginFormInputs>();
     const [apiError, setApiError] = useState<string | null>(null);
-    const auth = useAuth();
     const navigate = useNavigate();
+    const login = useAuthStore((state) => state.login);
+    const isLoadingLogin = useAuthStore((state) => state.isLoadingLogin);
 
     const onSubmit: SubmitHandler<LoginFormInputs> = async (data: LoginFormInputs) => {
         setApiError(null);
-        const result = await auth.login(data.username, data.password);
+        const result = await login(data.username, data.password);
         if (result.success) {
             navigate({ to: "/dashboard" });
         } else {
@@ -68,8 +69,8 @@ function LoginComponent() {
                             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
                         </div>
                         {apiError && <p className="text-sm text-destructive">{apiError}</p>}
-                        <Button type="submit" className="w-full" disabled={auth.isLoading}>
-                            {auth.isLoading ? "Logging in..." : "Login"}
+                        <Button type="submit" className="w-full" disabled={isLoadingLogin}>
+                            {isLoadingLogin ? "Logging in..." : "Login"}
                         </Button>
                     </form>
                 </CardContent>

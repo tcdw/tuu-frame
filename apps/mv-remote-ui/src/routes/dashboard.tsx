@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useAuth } from "../auth";
+import { useAuthStore } from "../auth";
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from "../services/api";
 import * as ApiTypes from "../../../mv-player/src/shared-api-types";
 
@@ -37,11 +37,17 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardComponent() {
-    const auth = useAuth();
     const navigate = useNavigate();
+    const logout = useAuthStore(state => state.logout);
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const username = useAuthStore(state => state.username);
+    // isLoadingInitial is already handled by RootComponent, but we might need it here
+    // if we want to show a loading state specific to dashboard data, or if RootComponent's loading isn't sufficient.
+    // For now, the main auth check loading is handled by RootComponent.
 
     const handleLogout = async () => {
-        await auth.logout();
+        await logout();
+        navigate({ to: "/login", replace: true }); // Navigate after logout action completes
     };
 
     const [presets, setPresets] = useState<ApiTypes.PresetItem[]>([]);
@@ -53,13 +59,18 @@ function DashboardComponent() {
     const [loadingPresets, setLoadingPresets] = useState<boolean>(true);
 
     useEffect(() => {
-        if (!auth.isLoading && !auth.isAuthenticated) {
+        // RootComponent now handles the initial loading state.
+        // This effect ensures that if the user somehow lands here and is not authenticated,
+        // (e.g. token expires, or direct navigation attempt when not logged in and initial check passed somehow)
+        // they are redirected.
+        // The isLoadingInitial check in RootComponent should prevent rendering this component until auth is resolved.
+        if (!isAuthenticated) {
             navigate({ to: "/login", replace: true });
         }
-    }, [auth.isLoading, auth.isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate]);
 
     useEffect(() => {
-        if (auth.isAuthenticated) {
+        if (isAuthenticated) {
             // Only fetch if authenticated
             const fetchInitialPresets = async () => {
                 try {
@@ -76,7 +87,7 @@ function DashboardComponent() {
             };
             fetchInitialPresets();
         }
-    }, [auth.isAuthenticated]); // Depend on auth.isAuthenticated
+    }, [isAuthenticated]); // Depend on isAuthenticated from the store
 
     const handleAddPreset = async () => {
         if (!newPresetPath.trim()) {
@@ -141,18 +152,6 @@ function DashboardComponent() {
         }
     };
 
-    if (auth.isLoading || (!auth.isAuthenticated && !auth.isLoading)) {
-        // Show loading if auth is loading OR if not authenticated and not loading (implies redirect is imminent)
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-                <Loader2 className="mr-2 h-12 w-12 animate-spin text-primary" />
-                <p className="text-lg text-muted-foreground mt-2">Loading...</p>
-            </div>
-        );
-    }
-    // useEffect handles redirection if !auth.isAuthenticated, so this is an additional safeguard.
-    if (!auth.isAuthenticated) return null;
-
     return (
         <>
             <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 lg:p-8 bg-background">
@@ -160,18 +159,18 @@ function DashboardComponent() {
                     <header className="flex flex-col sm:flex-row justify-between items-center mb-8 pb-4 border-b">
                         <h1 className="text-3xl font-bold text-foreground mb-4 sm:mb-0">MV Player Remote</h1>
                         <div className="flex items-center space-x-2 sm:space-x-4">
-                            {auth.username && (
-                                <span className="text-sm text-muted-foreground hidden sm:inline">
-                                    Welcome, {auth.username}!
-                                </span>
+                            {username && (
+                                <p className="text-sm text-muted-foreground">
+                                    Welcome back, {username || "User"}! Manage your presets below.
+                                </p>
                             )}
                             <Link to="/settings/change-password">
                                 <Button variant="outline" size="sm">
                                     <KeyRound className="mr-2 h-4 w-4" /> Change Password
                                 </Button>
                             </Link>
-                            <Button variant="outline" size="sm" onClick={handleLogout} disabled={auth.isLoading}>
-                                <LogOut className="mr-2 h-4 w-4" /> {auth.isLoading ? "Logging out..." : "Logout"}
+                            <Button variant="outline" size="sm" onClick={handleLogout}>
+                                <LogOut className="mr-2 h-4 w-4" /> Logout
                             </Button>
                         </div>
                     </header>

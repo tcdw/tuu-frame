@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "../auth";
+import { useAuthStore } from "../auth";
 
 export const Route = createFileRoute("/settings/change-password")({
     component: ChangePasswordComponent,
@@ -15,7 +15,9 @@ import { KeyRound, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-
 import { Link } from "@tanstack/react-router";
 
 function ChangePasswordComponent() {
-    const auth = useAuth();
+    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const changePassword = useAuthStore(state => state.changePassword);
+    const isLoadingPasswordChange = useAuthStore(state => state.isLoadingPasswordChange);
     const navigate = useNavigate();
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -24,10 +26,11 @@ function ChangePasswordComponent() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!auth.isLoading && !auth.isAuthenticated) {
+        // RootComponent handles initial loading. This ensures redirection if user becomes unauthenticated.
+        if (!isAuthenticated) {
             navigate({ to: "/login", replace: true });
         }
-    }, [auth.isLoading, auth.isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -42,7 +45,7 @@ function ChangePasswordComponent() {
             setError("New passwords do not match.");
             return;
         }
-        const result = await auth.changePassword(oldPassword, newPassword);
+        const result = await changePassword(oldPassword, newPassword);
 
         if (result.success) {
             setSuccessMessage(result.message || "Password changed successfully!");
@@ -56,19 +59,6 @@ function ChangePasswordComponent() {
             setError(result.error || "Failed to change password. Please check your details.");
         }
     };
-
-    if (auth.isLoading && !auth.isAuthenticated) {
-        // Show loader only if not yet authenticated but loading
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    if (!auth.isAuthenticated && !auth.isLoading) {
-        return null; // Should be redirected by useEffect
-    }
 
     return (
         <div className="container mx-auto py-8 flex flex-col items-center">
@@ -140,10 +130,10 @@ function ChangePasswordComponent() {
                                 <AlertDescription>{successMessage}</AlertDescription>
                             </Alert>
                         )}
-                        <Button type="submit" className="w-full" disabled={auth.isLoadingPasswordChange}>
+                        <Button type="submit" className="w-full" disabled={isLoadingPasswordChange}>
                             {" "}
                             {/* Assuming isLoadingPasswordChange from AuthContext */}
-                            {auth.isLoadingPasswordChange ? (
+                            {isLoadingPasswordChange ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Changing...
                                 </>

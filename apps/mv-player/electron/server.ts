@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import cors from "cors";
 import * as ApiTypes from "../src/shared-api-types.ts";
 import { loadPresets, savePresets, scanDirectoryForVideos } from "./functions.ts";
+import { randomUUID } from 'node:crypto';
 import fs from "node:fs/promises";
 import path from "node:path";
 import { BrowserWindow, app } from "electron";
@@ -164,8 +165,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
         _req: AuthenticatedRequest,
         res: Response<ApiTypes.PresetsListResponse>,
     ) => {
-        const presets = await loadPresets();
-        res.json({ code: 200, data: presets, err: null });
+            res.json({ code: 200, data: await loadPresets(), err: null }); // loadPresets now returns PresetItem[]
     }) as any);
 
     // Add a new preset
@@ -173,38 +173,40 @@ export function createServer(win: BrowserWindow): Promise<void> {
         req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.AddPresetRequest>,
         res: Response<ApiTypes.PresetMutationSuccessResponse>,
     ) => {
-        const { path: newPresetPath }: ApiTypes.AddPresetRequest = req.body;
+        const { mainPath, order, name } = req.body;
 
-        if (!newPresetPath) {
-            res.status(400).json({ code: 400, data: null, err: "Invalid path provided." });
+        if (!mainPath || typeof mainPath !== "string") {
+            res.status(400).json({ code: 400, data: null, err: "Invalid mainPath provided." });
             return;
         }
 
         try {
-            const stats = await fs.stat(newPresetPath);
+            const stats = await fs.stat(mainPath);
             if (!stats.isDirectory()) {
-                res.status(400).json({ code: 400, data: null, err: "Path is not a directory." });
+                res.status(400).json({ code: 400, data: null, err: "Provided mainPath is not a directory." });
                 return;
             }
         } catch (error) {
-            console.error(`[/api/presets] Error: ${error}`);
-            res.status(400).json({ code: 400, data: null, err: "Path does not exist or is inaccessible." });
+            res.status(400).json({ code: 400, data: null, err: "mainPath does not exist or is inaccessible." });
             return;
         }
 
         const currentPresets = await loadPresets();
-        if (currentPresets.includes(newPresetPath)) {
-            res.status(409).json({ code: 409, data: null, err: "Preset already exists." });
+        if (currentPresets.some(p => p.mainPath === mainPath)) {
+            res.status(409).json({ code: 409, data: null, err: "Preset with this mainPath already exists." });
             return;
         }
 
-        const updatedPresets = [...currentPresets, newPresetPath];
+        const newPreset: ApiTypes.PresetItem = {
+            id: randomUUID(),
+            mainPath,
+            order: order || 'shuffle', // Default to shuffle if not provided
+            name: name || mainPath.split(path.sep).pop() || mainPath // Default name from path if not provided
+        };
+
+        const updatedPresets = [...currentPresets, newPreset];
         await savePresets(updatedPresets);
-        res.status(201).json({
-            code: 201,
-            data: { presets: updatedPresets, message: "Preset added successfully." },
-            err: null,
-        });
+        res.status(201).json({ code: 201, data: { presets: updatedPresets, message: "Preset added successfully." }, err: null });
     }) as any);
 
     // Delete a preset
@@ -212,20 +214,22 @@ export function createServer(win: BrowserWindow): Promise<void> {
         req: Request<never, ApiTypes.PresetMutationSuccessResponse, ApiTypes.DeletePresetRequest>,
         res: Response<ApiTypes.PresetMutationSuccessResponse>,
     ) => {
-        const { path: pathToDelete }: ApiTypes.DeletePresetRequest = req.body;
+        const { id: idToDelete } = req.body;
 
-        if (!pathToDelete) {
-            res.status(400).json({ code: 400, data: null, err: "Invalid path provided for deletion." });
+        if (!idToDelete || typeof idToDelete !== 'string') {
+            res.status(400).json({ code: 400, data: null, err: "Invalid or missing ID provided for deletion." });
             return;
         }
 
         const currentPresets = await loadPresets();
-        if (!currentPresets.includes(pathToDelete)) {
-            res.status(404).json({ code: 404, data: null, err: "Preset path not found." });
+        const presetExists = currentPresets.some(p => p.id === idToDelete);
+
+        if (!presetExists) {
+            res.status(404).json({ code: 404, data: null, err: "Preset ID not found." });
             return;
         }
 
-        const updatedPresets = currentPresets.filter(p => p !== pathToDelete);
+        const updatedPresets = currentPresets.filter(p => p.id !== idToDelete);
         await savePresets(updatedPresets);
         res.json({ code: 200, data: { presets: updatedPresets, message: "Preset deleted successfully." }, err: null });
     }) as any);

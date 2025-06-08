@@ -25,10 +25,10 @@ export async function getPresets(): Promise<ApiTypes.PresetsListData> {
  * API expects: { path: string }
  * API returns: { message: string; presets: string[] }
  */
-export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSuccessData> {
+export async function addPreset(presetData: Omit<ApiTypes.PresetItem, 'id'>): Promise<ApiTypes.PresetMutationSuccessData> {
     return apiClient.post<ApiTypes.ApiResponse<ApiTypes.PresetMutationSuccessData>, ApiTypes.PresetMutationSuccessData>(
         "/presets",
-        { path } as ApiTypes.AddPresetRequest,
+        presetData as ApiTypes.AddPresetRequest,
     );
 }
 
@@ -37,12 +37,12 @@ export async function addPreset(path: string): Promise<ApiTypes.PresetMutationSu
  * API expects: { path: string }
  * API returns: { message: string; presets: string[] }
  */
-export async function deletePreset(path: string): Promise<ApiTypes.PresetMutationSuccessData> {
+export async function deletePreset(id: string): Promise<ApiTypes.PresetMutationSuccessData> {
     // For DELETE requests with a body, axios expects data to be in the `data` property of the config object
     return apiClient.delete<
         ApiTypes.ApiResponse<ApiTypes.PresetMutationSuccessData>,
         ApiTypes.PresetMutationSuccessData
-    >("/presets", { data: { path } as ApiTypes.DeletePresetRequest });
+    >("/presets", { data: { id } as ApiTypes.DeletePresetRequest });
 }
 
 /**

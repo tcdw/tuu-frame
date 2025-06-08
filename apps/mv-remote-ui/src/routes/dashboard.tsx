@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "../auth";
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from "../services/api";
-import type { UIPreset } from "../services/api";
+import * as ApiTypes from "../../../mv-player/src/shared-api-types";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,7 @@ function DashboardComponent() {
         await auth.logout();
     };
 
-    const [presets, setPresets] = useState<UIPreset[]>([]);
+    const [presets, setPresets] = useState<ApiTypes.PresetItem[]>([]);
     const [newPresetPath, setNewPresetPath] = useState("");
     const [activeDirectoryPath, setActiveDirectoryPath] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -50,9 +51,8 @@ function DashboardComponent() {
                 try {
                     setLoadingPresets(true);
                     setError(null);
-                    const presetPaths = await getPresets();
-                    const uiPresets = presetPaths.map(path => ({ path, name: pathToName(path) }));
-                    setPresets(uiPresets);
+                    const presetItems = await getPresets();
+                    setPresets(presetItems);
                 } catch (err) {
                     console.error("Failed to load presets:", err);
                     setError(err instanceof Error ? err.message : "An unknown error occurred while fetching presets.");
@@ -71,20 +71,15 @@ function DashboardComponent() {
         }
         try {
             setError(null);
-            const result = await addPreset(newPresetPath);
-            let presetsToSet: string[] = [];
-            if (Array.isArray(result)) {
-                presetsToSet = result;
-            } else if (result && Array.isArray(result.presets)) {
-                presetsToSet = result.presets;
+            const result = await addPreset({ mainPath: newPresetPath.trim(), order: 'shuffle', name: pathToName(newPresetPath.trim()) });
+            if (result && Array.isArray(result.presets)) {
+                setPresets(result.presets);
             } else {
                 console.warn("handleAddPreset: API response did not contain a valid presets array.", result);
                 setError("Preset action completed, but failed to update list from response.");
-                setNewPresetPath("");
-                return;
+                // Optionally, re-fetch presets to ensure consistency
+                // await fetchInitialPresets(); 
             }
-            const uiPresets = presetsToSet.map(path => ({ path, name: pathToName(path) }));
-            setPresets(uiPresets);
             setNewPresetPath("");
         } catch (err) {
             console.error("Failed to add preset:", err);
@@ -92,12 +87,18 @@ function DashboardComponent() {
         }
     };
 
-    const handleDeletePreset = async (pathToDelete: string) => {
+    const handleDeletePreset = async (idToDelete: string) => {
         try {
             setError(null);
-            const updatedPaths = await deletePreset(pathToDelete);
-            const uiPresets = updatedPaths.presets.map(path => ({ path, name: pathToName(path) }));
-            setPresets(uiPresets);
+            const result = await deletePreset(idToDelete);
+            if (result && Array.isArray(result.presets)) {
+                setPresets(result.presets);
+            } else {
+                console.warn("handleDeletePreset: API response did not contain a valid presets array.", result);
+                setError("Preset action completed, but failed to update list from response.");
+                // Optionally, re-fetch presets to ensure consistency
+                // await fetchInitialPresets();
+            }
         } catch (err) {
             console.error("Failed to delete preset:", err);
             setError(err instanceof Error ? err.message : "An unknown error occurred while deleting preset.");
@@ -185,22 +186,22 @@ function DashboardComponent() {
                             </p>
                         ) : (
                             <ul className="space-y-3">
-                                {presets.map(preset => (
+                                {presets.map((preset) => (
                                     <li
-                                        key={preset.path}
+                                        key={preset.id}
                                         className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md hover:bg-muted/50 transition-colors"
                                     >
                                         <div className="mb-2 sm:mb-0">
-                                            <p className="font-medium text-foreground">{preset.name}</p>
-                                            <p className="text-xs text-muted-foreground">{preset.path}</p>
+                                            <p className="font-medium text-foreground">{preset.name || pathToName(preset.mainPath)}</p>
+                                            <p className="text-xs text-muted-foreground">{preset.mainPath}</p>
                                         </div>
                                         <div className="flex space-x-2 self-end sm:self-center">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => {
-                                                    setActiveDirectoryPath(preset.path);
-                                                    handleSetActiveDirectory(preset.path);
+                                                    setActiveDirectoryPath(preset.mainPath);
+                                                    handleSetActiveDirectory(preset.mainPath);
                                                 }}
                                             >
                                                 <Play /> Play
@@ -208,7 +209,7 @@ function DashboardComponent() {
                                             <Button
                                                 variant="destructive"
                                                 size="sm"
-                                                onClick={() => handleDeletePreset(preset.path)}
+                                                onClick={() => handleDeletePreset(preset.id)}
                                             >
                                                 <Trash2 /> Delete
                                             </Button>

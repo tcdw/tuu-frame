@@ -14,21 +14,38 @@ export interface PingData {
 export type PingResponse = ApiResponse<PingData>;
 
 // --- /api/presets ---
-export type PresetsListData = string[];
+
+// Defines the possible order types for a preset. Extensible.
+export type PresetOrderType = "shuffle" | "normal" | string;
+
+export interface PresetItem {
+    id: string;          // Unique identifier for the preset
+    mainPath: string;    // The main directory path for this preset
+    order: PresetOrderType; // Playback order (e.g., shuffle, normal)
+    name?: string;       // Optional user-defined name for the preset
+    // Add other future properties here, e.g.:
+    // includeSubfolders?: boolean;
+    // lastPlayed?: string; // ISO date string
+    // createdAt?: string; // ISO date string
+}
+
+export type PresetsListData = PresetItem[];
 export type PresetsListResponse = ApiResponse<PresetsListData>;
 
 export interface AddPresetRequest {
-    path: string;
+    mainPath: string;
+    order?: PresetOrderType;
+    name?: string;
 }
 
 export interface PresetMutationSuccessData {
-    presets: string[];
+    presets: PresetItem[];
     message?: string;
 }
 export type PresetMutationSuccessResponse = ApiResponse<PresetMutationSuccessData>;
 
 export interface DeletePresetRequest {
-    path: string;
+    id: string; // Use ID for deletion
 }
 
 // --- /api/set-active-directory ---

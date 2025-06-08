@@ -48,10 +48,9 @@ function createWindow(): BrowserWindow {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-        app.quit();
-        win = null;
-    }
+    // Quit when all windows are closed, including on macOS.
+    app.quit();
+    win = null;
 });
 
 app.on("activate", () => {

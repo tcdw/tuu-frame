@@ -121,6 +121,17 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   **Authentication**: Enhanced single-user authentication is implemented. This includes client-side HMAC-SHA512 password hashing (using a server-provided public salt) in `mv-remote-ui` before transmission, followed by server-side bcrypt hashing in `mv-player`. JWTs are used for API authorization.
 *   **Monorepo Structure**: Successfully managed by Turborepo and pnpm workspaces.
 
+### Recent UI/UX and Core Logic Enhancements (June 8th, 2025):
+
+*   **Directory Browser UI (`mv-remote-ui`):**
+    *   **Overflow Fix:** Resolved horizontal overflow for long directory names in the `DirectoryBrowserModal` through refined CSS (flexbox and text truncation).
+    *   **Item-Specific Loading:** Implemented a loading spinner on individual directory items during content fetching for improved user feedback.
+*   **Directory Browser API (`mv-player` & Shared Types):**
+    *   **Clearer API Response:** The `GET /api/browse-directories` endpoint now returns `{ path: string, entries: DirectoryEntry[] }`, providing the full browsed path directly from the backend.
+    *   **Simplified Frontend Logic:** The `DirectoryBrowserModal` now uses this direct path information, simplifying its internal logic and enhancing robustness.
+*   **Electron App Behavior (`mv-player`):
+    *   **macOS Quit on Window Close:** The Electron app now quits when all windows are closed on macOS, aligning behavior with other platforms.
+
 ### Potential Future Enhancements:
 
 1.  **Enhance Remote UI (`mv-remote-ui`):**
@@ -137,4 +148,4 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-08T16:23:31+08:00.
+This document was last updated on: 2025-06-08T17:30:11+08:00.

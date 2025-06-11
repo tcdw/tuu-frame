@@ -1,11 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useAuthStore } from "../auth";
-
-export const Route = createFileRoute("/settings/change-password")({
-    component: ChangePasswordComponent,
-});
-
+import { useAuthStore } from "../../auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { KeyRound, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/app/settings/change-password")({
+    component: ChangePasswordComponent,
+});
 
 function ChangePasswordComponent() {
     const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -26,7 +25,6 @@ function ChangePasswordComponent() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        // RootComponent handles initial loading. This ensures redirection if user becomes unauthenticated.
         if (!isAuthenticated) {
             navigate({ to: "/login", replace: true });
         }
@@ -36,7 +34,6 @@ function ChangePasswordComponent() {
         e.preventDefault();
         setError(null);
         setSuccessMessage(null);
-
         if (!oldPassword || !newPassword || !confirmPassword) {
             setError("All fields are required.");
             return;
@@ -46,7 +43,6 @@ function ChangePasswordComponent() {
             return;
         }
         const result = await changePassword(oldPassword, newPassword);
-
         if (result.success) {
             setSuccessMessage(result.message || "Password changed successfully!");
             setOldPassword("");
@@ -64,7 +60,7 @@ function ChangePasswordComponent() {
         <div className="container mx-auto py-8 flex flex-col items-center">
             <div className="w-full max-w-md mb-6">
                 <Link
-                    to="/dashboard"
+                    to="/app/dashboard"
                     className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
                 >
                     <ArrowLeft />
@@ -131,8 +127,6 @@ function ChangePasswordComponent() {
                             </Alert>
                         )}
                         <Button type="submit" className="w-full" disabled={isLoadingPasswordChange}>
-                            {" "}
-                            {/* Assuming isLoadingPasswordChange from AuthContext */}
                             {isLoadingPasswordChange ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Changing...

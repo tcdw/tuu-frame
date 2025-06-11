@@ -1,10 +1,14 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
-    beforeLoad: () => {
-        throw redirect({
-            to: "/dashboard",
-        });
-    },
-    component: () => null, // Component will not be rendered due to redirect
+    component: IndexRedirect,
 });
+
+function IndexRedirect() {
+    const navigate = useNavigate();
+    useEffect(() => {
+        navigate({ to: "/app/dashboard", replace: true });
+    }, [navigate]);
+    return null;
+}

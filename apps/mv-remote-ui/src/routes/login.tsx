@@ -24,14 +24,14 @@ function LoginComponent() {
     } = useForm<LoginFormInputs>();
     const [apiError, setApiError] = useState<string | null>(null);
     const navigate = useNavigate();
-    const login = useAuthStore((state) => state.login);
-    const isLoadingLogin = useAuthStore((state) => state.isLoadingLogin);
+    const login = useAuthStore(state => state.login);
+    const isLoadingLogin = useAuthStore(state => state.isLoadingLogin);
 
     const onSubmit: SubmitHandler<LoginFormInputs> = async (data: LoginFormInputs) => {
         setApiError(null);
         const result = await login(data.username, data.password);
         if (result.success) {
-            navigate({ to: "/dashboard" });
+            navigate({ to: "/app/dashboard" });
         } else {
             setApiError(result.error || "Login failed. Please check your credentials.");
         }

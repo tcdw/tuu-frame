@@ -114,6 +114,49 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   `vite.config.ts`: Vite build configuration, including TanStack Router plugin.
 *   `package.json`: Project dependencies and scripts.
 
+### 路由与统一布局（2025-06 优化）
+
+`mv-remote-ui` 采用了 TanStack Router 的嵌套路由与统一 layout 方案：
+
+- **所有需要认证的页面**（如 dashboard、monitor、settings/change-password）都放在 `routes/app/` 目录下。
+- `routes/app/route.tsx` 作为 layout 路由，使用 `DashboardLayout` 组件统一包裹所有子页面，实现统一的 header 和导航体验。
+- 这样所有 `/app/*` 路由都自动带有一致的顶部栏，代码复用性和用户体验大幅提升。
+- 登录页、未认证页等则不在该 layout 下，保持最小化渲染。
+
+**目录结构示例：**
+```
+routes/
+├── app/
+│   ├── route.tsx                # layout 路由，包裹 header
+│   ├── dashboard.tsx            # 主页（需要认证）
+│   ├── monitor.tsx              # 监控页（需要认证）
+│   ├── settings.change-password.tsx # 修改密码页（需要认证）
+├── login.tsx                    # 登录页
+├── __root.tsx                   # 根路由
+├── index.tsx                    # 首页重定向
+```
+
+**layout 路由代码示例：**
+```tsx
+// routes/app/route.tsx
+import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { DashboardLayout } from "@/components/DashboardLayout";
+
+export const Route = createFileRoute("/app")({
+  component: () => (
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  ),
+});
+```
+
+**优势：**
+- 代码复用性高，header 只需维护一处
+- 用户体验一致，所有认证页面风格统一
+- 新增认证页面只需放到 app 目录即可自动带上 header
+- 结构清晰，后续扩展和维护更方便
+
 ## 5. Current Status & Next Steps
 
 *   **Monorepo Transition**: The project has been successfully converted to a monorepo structure using Turborepo and pnpm workspaces. This enhances project organization, build efficiency, and dependency management.

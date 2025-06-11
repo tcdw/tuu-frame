@@ -8,6 +8,7 @@ interface ElectronAPI {
     onUpdatePlaylist: (callback: (videoFiles: string[]) => void) => void;
     onPlayerCommand: (callback: (command: string, ...args: any[]) => void) => void;
     sendPlaybackState: (isPlaying: boolean) => void;
+    onMonitoringSnapshot: (callback: () => void) => void;
 }
 
 declare var electronAPI: ElectronAPI;

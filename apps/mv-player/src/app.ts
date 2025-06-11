@@ -5,6 +5,8 @@ let currentVideoPath: string | undefined = undefined;
 
 const videoElement = document.getElementById("video-player") as HTMLVideoElement | null;
 const statusMessageElement = document.getElementById("status-message") as HTMLParagraphElement | null;
+const monitoringIndicator = document.getElementById("monitoring-indicator") as HTMLDivElement | null;
+let monitoringTimeout: ReturnType<typeof setTimeout> | null = null;
 
 if (videoElement) {
     videoElement.addEventListener("play", () => {
@@ -137,6 +139,23 @@ if (videoElement && !videoElement.src && statusMessageElement) {
     statusMessageElement.textContent = "Waiting for video...";
     statusMessageElement.style.display = "block";
     videoElement.style.display = "none";
+}
+
+if (globalThis.electronAPI && typeof globalThis.electronAPI.onMonitoringSnapshot === "function") {
+    console.log("Renderer: onMonitoringSnapshot is available.");
+    globalThis.electronAPI.onMonitoringSnapshot(() => {
+        if (monitoringIndicator) {
+            monitoringIndicator.style.display = "block";
+        }
+        if (monitoringTimeout) {
+            clearTimeout(monitoringTimeout);
+        }
+        monitoringTimeout = setTimeout(() => {
+            if (monitoringIndicator) {
+                monitoringIndicator.style.display = "none";
+            }
+        }, 3000);
+    });
 }
 
 console.log("Renderer script app.ts loaded.");

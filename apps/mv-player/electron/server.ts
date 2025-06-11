@@ -217,6 +217,9 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 res.setHeader("Pragma", "no-cache");
                 res.setHeader("Expires", "0");
                 res.send(jpeg);
+                if (win && !win.isDestroyed()) {
+                    win.webContents.send("main:monitoringSnapshot");
+                }
             } catch (error) {
                 console.error("[Snapshot] Error capturing or sending frame:", error);
                 if (!res.headersSent) {

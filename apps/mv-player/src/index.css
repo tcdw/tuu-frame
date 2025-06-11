@@ -2,6 +2,7 @@ body {
   margin: 0;
   overflow: hidden;
   background-color: #000;
+  font-family: sans-serif;
 }
 
 #root {
@@ -19,4 +20,18 @@ body {
   width: 100svw;
   height: 100svh;
   object-fit: contain;
+}
+
+.monitoring-indicator {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  z-index: 100;
+  display: none;
 }

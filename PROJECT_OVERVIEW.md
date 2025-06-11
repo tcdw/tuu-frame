@@ -187,6 +187,12 @@ export const Route = createFileRoute("/app")({
         *   Configured the `mv-remote-ui` Vite development server to proxy `/api` requests to the `mv-player` backend (running on `http://localhost:15678`). This streamlines development by avoiding the need for full remote UI rebuilds when only backend API changes occur.
         *   Exposed the Vite dev server on the LAN (`host: '0.0.0.0'`) for easier testing on multiple devices.
 
+*   **本地播放器监控提示（2025-06-09 新增）**：
+    *   当远程访问 `/api/monitor/snapshot.jpg`（如监控页面轮询快照）时，Electron 主进程会通过 IPC 向 renderer 发送"监看中"信号。
+    *   渲染进程收到信号后，在播放器画面左上角显示"监看中"提示。
+    *   若 3 秒内未再次收到信号，提示会自动隐藏。
+    *   该机制为本地用户提供了远程监控的可视化反馈，提升了安全感和透明度。
+
 ### Potential Future Enhancements:
 
 1.  **Enhance Remote UI (`mv-remote-ui`):**

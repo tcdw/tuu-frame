@@ -7,19 +7,19 @@ const videoElement = document.getElementById("video-player") as HTMLVideoElement
 const statusMessageElement = document.getElementById("status-message") as HTMLParagraphElement | null;
 
 if (videoElement) {
-    videoElement.addEventListener('play', () => {
-        console.log('[Renderer] Video playing');
+    videoElement.addEventListener("play", () => {
+        console.log("[Renderer] Video playing");
         globalThis.electronAPI?.sendPlaybackState(true);
     });
 
-    videoElement.addEventListener('pause', () => {
-        console.log('[Renderer] Video paused');
+    videoElement.addEventListener("pause", () => {
+        console.log("[Renderer] Video paused");
         globalThis.electronAPI?.sendPlaybackState(false);
     });
 
-    videoElement.addEventListener('ended', handleVideoEnded);
+    videoElement.addEventListener("ended", handleVideoEnded);
 } else {
-    console.error('Video element not found');
+    console.error("Video element not found");
 }
 
 function setVideoUrl(url: string | undefined) {
@@ -118,10 +118,10 @@ if (globalThis.electronAPI && typeof globalThis.electronAPI.onPlayerCommand === 
     globalThis.electronAPI.onPlayerCommand((command: string) => {
         console.log("Main process sent player command:", command);
         switch (command) {
-            case 'toggle-play-pause':
+            case "toggle-play-pause":
                 togglePlayPause();
                 break;
-            case 'next-track':
+            case "next-track":
                 playNextTrack();
                 break;
             default:

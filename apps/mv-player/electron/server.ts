@@ -202,6 +202,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
                     return res.status(204).end();
                 }
 
+                // 因为 Electron 目前还不支持输出 webp 格式的图片，所以这里暂时使用 jpeg 格式
                 const jpeg = image.toJPEG(70); // Quality 0-100
 
                 if (process.env.NODE_ENV === "development") {
@@ -324,6 +325,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 return;
             }
         } catch (error) {
+            console.error(`[/api/presets] Error: ${error}`);
             res.status(400).json({ code: 400, data: null, err: "Directory path does not exist or is inaccessible." });
             return;
         }

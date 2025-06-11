@@ -25,7 +25,7 @@ export const Route = createFileRoute("/app/dashboard")({
 });
 
 function DashboardComponent() {
-    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+    const { isAuthenticated } = useAuthStore();
     const navigate = useNavigate();
     const [presets, setPresets] = useState<ApiTypes.PresetItem[]>([]);
     const [newPresetName, setNewPresetName] = useState("");

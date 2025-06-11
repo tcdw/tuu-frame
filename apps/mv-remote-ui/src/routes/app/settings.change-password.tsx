@@ -14,9 +14,7 @@ export const Route = createFileRoute("/app/settings/change-password")({
 });
 
 function ChangePasswordComponent() {
-    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-    const changePassword = useAuthStore(state => state.changePassword);
-    const isLoadingPasswordChange = useAuthStore(state => state.isLoadingPasswordChange);
+    const { isAuthenticated, changePassword, isLoadingPasswordChange } = useAuthStore();
     const navigate = useNavigate();
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");

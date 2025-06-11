@@ -15,8 +15,8 @@ export const Route = createFileRoute("/app/monitor")({
 });
 
 function MonitorComponent() {
+    const { isAuthenticated } = useAuthStore();
     const navigate = useNavigate();
-    const isAuthenticated = useAuthStore(state => state.isAuthenticated);
     const [monitorStreamUrl, setMonitorStreamUrl] = useState<string | null>(null);
     const [isPlayingRemote, setIsPlayingRemote] = useState<boolean>(false);
 
@@ -139,4 +139,4 @@ function MonitorComponent() {
             </Card>
         </div>
     );
-} 
+}

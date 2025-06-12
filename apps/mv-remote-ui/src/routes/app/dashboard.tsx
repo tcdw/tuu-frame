@@ -19,6 +19,7 @@ import {
     Tv2 as MonitorIcon,
 } from "lucide-react";
 import { DirectoryBrowserModal } from "@/components/DirectoryBrowserModal";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/app/dashboard")({
     component: DashboardComponent,
@@ -34,6 +35,7 @@ function DashboardComponent() {
     const [activeDirectoryPath, setActiveDirectoryPath] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loadingPresets, setLoadingPresets] = useState<boolean>(true);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -51,18 +53,18 @@ function DashboardComponent() {
                     setPresets(presetItems);
                 } catch (err) {
                     console.error("Failed to load presets:", err);
-                    setError(err instanceof Error ? err.message : "An unknown error occurred while fetching presets.");
+                    setError(err instanceof Error ? err.message : t("dashboard.fetch_error"));
                 } finally {
                     setLoadingPresets(false);
                 }
             };
             fetchInitialPresets();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, t]);
 
     const handleAddPreset = async () => {
         if (!newPresetPath.trim()) {
-            setError("Preset path cannot be empty.");
+            setError(t("dashboard.preset_path_empty"));
             return;
         }
         try {
@@ -76,13 +78,13 @@ function DashboardComponent() {
                 setPresets(result.presets);
             } else {
                 console.warn("handleAddPreset: API response did not contain a valid presets array.", result);
-                setError("Preset action completed, but failed to update list from response.");
+                setError(t("dashboard.preset_update_failed"));
             }
             setNewPresetName("");
             setNewPresetPath("");
         } catch (err) {
             console.error("Failed to add preset:", err);
-            setError(err instanceof Error ? err.message : "An unknown error occurred while adding preset.");
+            setError(err instanceof Error ? err.message : t("dashboard.add_error"));
         }
     };
 
@@ -94,17 +96,17 @@ function DashboardComponent() {
                 setPresets(result.presets);
             } else {
                 console.warn("handleDeletePreset: API response did not contain a valid presets array.", result);
-                setError("Preset action completed, but failed to update list from response.");
+                setError(t("dashboard.preset_update_failed"));
             }
         } catch (err) {
             console.error("Failed to delete preset:", err);
-            setError(err instanceof Error ? err.message : "An unknown error occurred while deleting preset.");
+            setError(err instanceof Error ? err.message : t("dashboard.delete_error"));
         }
     };
 
     const handleSetActiveDirectory = async (path: string) => {
         if (!path.trim()) {
-            setError("Active directory path cannot be empty.");
+            setError(t("dashboard.active_dir_empty"));
             return;
         }
         try {
@@ -113,7 +115,7 @@ function DashboardComponent() {
             console.log("Set active directory result:", result.message, "Videos found:", result.videoCount);
         } catch (err) {
             console.error("Failed to set active directory:", err);
-            setError(err instanceof Error ? err.message : "An unknown error occurred while setting active directory.");
+            setError(err instanceof Error ? err.message : t("dashboard.set_active_dir_error"));
         }
     };
 
@@ -122,7 +124,7 @@ function DashboardComponent() {
             {error && (
                 <Alert variant="destructive" className="mb-6">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
+                    <AlertTitle>{t("dashboard.error")}</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
@@ -131,22 +133,18 @@ function DashboardComponent() {
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <ListVideo className="mr-2 h-5 w-5 text-primary" />
-                        Preset Folders
+                        {t("dashboard.title")}
                     </CardTitle>
-                    <CardDescription>
-                        Manage your saved preset folders. Click play to set as active directory.
-                    </CardDescription>
+                    <CardDescription>{t("dashboard.description")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {loadingPresets ? (
                         <div className="flex items-center justify-center p-6">
                             <Loader2 className="mr-2 h-6 w-6 animate-spin text-primary" />
-                            <p className="text-muted-foreground">Loading presets...</p>
+                            <p className="text-muted-foreground">{t("dashboard.loading")}</p>
                         </div>
                     ) : presets.length === 0 ? (
-                        <p className="text-sm text-muted-foreground py-4 text-center">
-                            No presets saved yet. Add one below.
-                        </p>
+                        <p className="text-sm text-muted-foreground py-4 text-center">{t("dashboard.empty")}</p>
                     ) : (
                         <ul className="space-y-3">
                             {presets.map(preset => (
@@ -158,10 +156,7 @@ function DashboardComponent() {
                                         <p className="font-medium text-foreground truncate" title={preset.name}>
                                             {preset.name}
                                         </p>
-                                        <p
-                                            className="text-xs text-muted-foreground truncate"
-                                            title={preset.path}
-                                        >
+                                        <p className="text-xs text-muted-foreground truncate" title={preset.path}>
                                             {preset.path}
                                         </p>
                                     </div>
@@ -174,14 +169,14 @@ function DashboardComponent() {
                                                 handleSetActiveDirectory(preset.path);
                                             }}
                                         >
-                                            <Play /> Play
+                                            <Play /> {t("dashboard.play")}
                                         </Button>
                                         <Button
                                             variant="destructive"
                                             size="sm"
                                             onClick={() => handleDeletePreset(preset.id)}
                                         >
-                                            <Trash2 /> Delete
+                                            <Trash2 /> {t("dashboard.delete")}
                                         </Button>
                                     </div>
                                 </li>
@@ -195,7 +190,7 @@ function DashboardComponent() {
                             type="text"
                             value={newPresetName}
                             onChange={e => setNewPresetName(e.target.value)}
-                            placeholder="Preset Name (optional)"
+                            placeholder={t("dashboard.input_name_placeholder")}
                             className="sm:col-span-2"
                         />
                         <div className="flex space-x-2 items-center sm:col-span-2">
@@ -203,7 +198,7 @@ function DashboardComponent() {
                                 type="text"
                                 value={newPresetPath}
                                 onChange={e => setNewPresetPath(e.target.value)}
-                                placeholder="Preset Path (e.g., /Users/name/videos)"
+                                placeholder={t("dashboard.input_path_placeholder")}
                                 className="flex-grow"
                             />
                             <Button
@@ -216,7 +211,7 @@ function DashboardComponent() {
                         </div>
                         <Button onClick={handleAddPreset} className="w-full sm:col-span-2">
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Preset
+                            {t("dashboard.add")}
                         </Button>
                     </div>
                 </CardFooter>
@@ -226,11 +221,9 @@ function DashboardComponent() {
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <FolderOpen className="mr-2 h-5 w-5 text-primary" />
-                        Set Active Directory
+                        {t("dashboard.set_active_dir")}
                     </CardTitle>
-                    <CardDescription>
-                        Manually enter a path or select a preset to start playback.
-                    </CardDescription>
+                    <CardDescription>{t("dashboard.set_active_dir_desc")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex w-full space-x-2 items-start">
@@ -238,14 +231,14 @@ function DashboardComponent() {
                             type="text"
                             value={activeDirectoryPath}
                             onChange={e => setActiveDirectoryPath(e.target.value)}
-                            placeholder="Enter absolute path or click 'Play' on a preset"
+                            placeholder={t("dashboard.input_placeholder")}
                             className="flex-grow"
                         />
                         <Button
                             onClick={() => handleSetActiveDirectory(activeDirectoryPath)}
                             disabled={!activeDirectoryPath.trim()}
                         >
-                            Set & Play
+                            {t("dashboard.set_and_play")}
                         </Button>
                     </div>
                 </CardContent>
@@ -255,17 +248,15 @@ function DashboardComponent() {
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <MonitorIcon className="mr-2 h-5 w-5 text-primary" />
-                        Player Monitor
+                        {t("monitor.title")}
                     </CardTitle>
-                    <CardDescription>
-                        View a live stream of the player window.
-                    </CardDescription>
+                    <CardDescription>{t("monitor.description")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <a href="/app/monitor">
                         <Button className="w-full">
                             <MonitorIcon className="mr-2 h-4 w-4" />
-                            Open Monitor Page
+                            {t("dashboard.open_monitor")}
                         </Button>
                     </a>
                 </CardContent>
@@ -281,4 +272,4 @@ function DashboardComponent() {
             />
         </>
     );
-} 
+}

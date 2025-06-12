@@ -6,6 +6,7 @@ import { togglePlayPauseRemote, nextTrackRemote, getPlayerStatus } from "../../s
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tv2 as MonitorIcon, ArrowLeft, Play, Pause, SkipForward } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const JWT_STORAGE_KEY = "mv_remote_jwt_token";
 const SNAPSHOT_INTERVAL_MS = 100; // Refresh snapshot every 1 second
@@ -19,6 +20,7 @@ function MonitorComponent() {
     const navigate = useNavigate();
     const [monitorStreamUrl, setMonitorStreamUrl] = useState<string | null>(null);
     const [isPlayingRemote, setIsPlayingRemote] = useState<boolean>(false);
+    const { t } = useTranslation();
 
     const fetchSnapshot = () => {
         const token = localStorage.getItem(JWT_STORAGE_KEY);
@@ -84,7 +86,7 @@ function MonitorComponent() {
             <div className="mb-6">
                 <Button variant="outline" onClick={() => navigate({ to: "/app/dashboard" })}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Dashboard
+                    {t("monitor.back")}
                 </Button>
             </div>
             <Card className="w-full max-w-3xl mx-auto">
@@ -92,10 +94,10 @@ function MonitorComponent() {
                     <div>
                         <CardTitle className="flex items-center">
                             <MonitorIcon className="mr-2 h-5 w-5 text-primary" />
-                            Remote Player Monitor
+                            {t("monitor.title")}
                         </CardTitle>
                         <CardDescription>
-                            Live view of the mv-player window. Stream updates periodically.
+                            {t("monitor.description")}
                         </CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -103,11 +105,11 @@ function MonitorComponent() {
                             variant="outline"
                             size="icon"
                             onClick={handleTogglePlayPause}
-                            title={isPlayingRemote ? "Pause" : "Play"}
+                            title={isPlayingRemote ? t("monitor.pause") : t("monitor.play")}
                         >
                             {isPlayingRemote ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                         </Button>
-                        <Button variant="outline" size="icon" onClick={handleNextTrack} title="Next Track">
+                        <Button variant="outline" size="icon" onClick={handleNextTrack} title={t("monitor.next")}> 
                             <SkipForward className="h-5 w-5" />
                         </Button>
                     </div>
@@ -116,7 +118,7 @@ function MonitorComponent() {
                     {monitorStreamUrl ? (
                         <img
                             src={monitorStreamUrl}
-                            alt="Remote player monitor"
+                            alt={t("monitor.title")}
                             style={{
                                 display: "block",
                                 width: "100%",
@@ -132,7 +134,7 @@ function MonitorComponent() {
                         />
                     ) : (
                         <div className="flex items-center justify-center h-64 border border-dashed rounded-md bg-muted/40">
-                            <p className="text-sm text-muted-foreground">The player monitor is active.</p>
+                            <p className="text-sm text-muted-foreground">{t("monitor.empty", "The player monitor is active.")}</p>
                         </div>
                     )}
                 </CardContent>

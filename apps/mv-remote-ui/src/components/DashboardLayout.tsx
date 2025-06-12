@@ -4,6 +4,8 @@ import { useAuthStore } from "../auth";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Menu as MenuIcon, LogOut, KeyRound, Monitor, Home, User, X as CloseIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -21,6 +23,7 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
     const username = useAuthStore(state => state.username);
     const navigate = useNavigate();
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const { i18n } = useTranslation();
 
     const handleLogout = async () => {
         await logout();
@@ -73,6 +76,17 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
                 <Button variant="outline" className="w-full justify-start gap-2 mb-2" onClick={handleLogout}>
                     <LogOut className="h-4 w-4" /> 退出
                 </Button>
+                <div className="mt-2">
+                    <Select value={i18n.language} onValueChange={lng => i18n.changeLanguage(lng)}>
+                        <SelectTrigger className="w-full">
+                            {i18n.language === "zh" ? "简体中文" : "English"}
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="zh">简体中文</SelectItem>
+                            <SelectItem value="en">English</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         </aside>
     );

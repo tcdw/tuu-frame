@@ -96,9 +96,7 @@ function MonitorComponent() {
                             <MonitorIcon className="mr-2 h-5 w-5 text-primary" />
                             {t("monitor.title")}
                         </CardTitle>
-                        <CardDescription>
-                            {t("monitor.description")}
-                        </CardDescription>
+                        <CardDescription>{t("monitor.description")}</CardDescription>
                     </div>
                     <div className="flex items-center space-x-2">
                         <Button
@@ -106,10 +104,11 @@ function MonitorComponent() {
                             size="icon"
                             onClick={handleTogglePlayPause}
                             title={isPlayingRemote ? t("monitor.pause") : t("monitor.play")}
+                            aria-label={isPlayingRemote ? t("monitor.pause") : t("monitor.play")}
                         >
                             {isPlayingRemote ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                         </Button>
-                        <Button variant="outline" size="icon" onClick={handleNextTrack} title={t("monitor.next")}> 
+                        <Button variant="outline" size="icon" onClick={handleNextTrack} title={t("monitor.next")}>
                             <SkipForward className="h-5 w-5" />
                         </Button>
                     </div>
@@ -134,7 +133,9 @@ function MonitorComponent() {
                         />
                     ) : (
                         <div className="flex items-center justify-center h-64 border border-dashed rounded-md bg-muted/40">
-                            <p className="text-sm text-muted-foreground">{t("monitor.empty", "The player monitor is active.")}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {t("monitor.empty", "The player monitor is active.")}
+                            </p>
                         </div>
                     )}
                 </CardContent>

@@ -114,7 +114,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   `vite.config.ts`: Vite build configuration, including TanStack Router plugin.
 *   `package.json`: Project dependencies and scripts.
 
-### 路由与统一布局（2025-06 优化）
+### 路由与统一布局
 
 `mv-remote-ui` 采用了 TanStack Router 的嵌套路由与统一 layout 方案：
 
@@ -175,23 +175,33 @@ export const Route = createFileRoute("/app")({
 *   **Electron App Behavior (`mv-player`):
     *   **macOS Quit on Window Close:** The Electron app now quits when all windows are closed on macOS, aligning behavior with other platforms.
 
-*   **Remote Playback Status API & Dev Proxy Setup (June 8th, 2025):**
-    *   **Playback Status API (`mv-player` & Shared):**
-        *   Implemented a `GET /api/player/status` endpoint in `mv-player` to return the current playback state (playing/paused).
-        *   The Electron main process now caches playback status, updated via IPC from the renderer and optimistically on play/pause toggle.
-        *   Added shared API types (`PlayerStatusData`, `PlayerStatusResponse`) for consistent data structure.
-    *   **Remote UI Playback Status (`mv-remote-ui`):**
-        *   The `/monitor` page now fetches and displays the live playback status from the `mv-player`.
-        *   The Play/Pause button dynamically updates its icon based on the actual playback state.
-    *   **Vite Dev Server Proxy & LAN Exposure (`mv-remote-ui`):**
-        *   Configured the `mv-remote-ui` Vite development server to proxy `/api` requests to the `mv-player` backend (running on `http://localhost:15678`). This streamlines development by avoiding the need for full remote UI rebuilds when only backend API changes occur.
-        *   Exposed the Vite dev server on the LAN (`host: '0.0.0.0'`) for easier testing on multiple devices.
+### Remote Playback Status API & Dev Proxy Setup (June 8th, 2025):
+*   **Playback Status API (`mv-player` & Shared):**
+    *   Implemented a `GET /api/player/status` endpoint in `mv-player` to return the current playback state (playing/paused).
+    *   The Electron main process now caches playback status, updated via IPC from the renderer and optimistically on play/pause toggle.
+    *   Added shared API types (`PlayerStatusData`, `PlayerStatusResponse`) for consistent data structure.
+*   **Remote UI Playback Status (`mv-remote-ui`):**
+    *   The `/monitor` page now fetches and displays the live playback status from the `mv-player`.
+    *   The Play/Pause button dynamically updates its icon based on the actual playback state.
+*   **Vite Dev Server Proxy & LAN Exposure (`mv-remote-ui`):**
+    *   Configured the `mv-remote-ui` Vite development server to proxy `/api` requests to the `mv-player` backend (running on `http://localhost:15678`). This streamlines development by avoiding the need for full remote UI rebuilds when only backend API changes occur.
+    *   Exposed the Vite dev server on the LAN (`host: '0.0.0.0'`) for easier testing on multiple devices.
 
-*   **本地播放器监控提示（2025-06-09 新增）**：
-    *   当远程访问 `/api/monitor/snapshot.jpg`（如监控页面轮询快照）时，Electron 主进程会通过 IPC 向 renderer 发送"监看中"信号。
-    *   渲染进程收到信号后，在播放器画面左上角显示"监看中"提示。
-    *   若 3 秒内未再次收到信号，提示会自动隐藏。
-    *   该机制为本地用户提供了远程监控的可视化反馈，提升了安全感和透明度。
+### 本地播放器监控提示（2025-06-09 新增）：
+*   当远程访问 `/api/monitor/snapshot.jpg`（如监控页面轮询快照）时，Electron 主进程会通过 IPC 向 renderer 发送"监看中"信号。
+*   渲染进程收到信号后，在播放器画面左上角显示"监看中"提示。
+*   若 3 秒内未再次收到信号，提示会自动隐藏。
+*   该机制为本地用户提供了远程监控的可视化反馈，提升了安全感和透明度。
+
+## 2025-06 国际化（i18n）改造说明
+
+- `apps/mv-remote-ui` 已全面支持中英文国际化，采用 `react-i18next` 实现。
+- 所有页面（登录、仪表盘、监控、修改密码等）和主要组件（如 DashboardLayout 侧边栏）均已用 `t('key')` 替换硬编码文本。
+- 语言包采用 TypeScript 文件（`en.ts`、`zh.ts`），并有类型声明（`locales.d.ts`），保证 key 类型安全，便于后续多语言维护和缺失字段检查。
+- 侧边栏底部新增语言切换菜单，支持实时切换中英文，体验一致。
+- 所有表单、按钮、占位符、错误提示、动态内容等均已国际化。
+
+---
 
 ### Potential Future Enhancements:
 
@@ -209,4 +219,4 @@ export const Route = createFileRoute("/app")({
 5.  **Error Handling & Robustness**: Continue to improve error handling and system robustness across all components, including more detailed API error feedback to the UI.
 6.  **Deployment/Distribution**: Define strategies for building and distributing the Electron app (`mv-player`) and deploying the web UI (`mv-remote-ui`).
 
-This document was last updated on: 2025-06-08T21:51:26+08:00.
+This document was last updated on: 2025-06-12

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { KeyRound, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/app/settings/change-password")({
     component: ChangePasswordComponent,
@@ -21,6 +22,7 @@ function ChangePasswordComponent() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -33,24 +35,24 @@ function ChangePasswordComponent() {
         setError(null);
         setSuccessMessage(null);
         if (!oldPassword || !newPassword || !confirmPassword) {
-            setError("All fields are required.");
+            setError(t("change_password.all_required"));
             return;
         }
         if (newPassword !== confirmPassword) {
-            setError("New passwords do not match.");
+            setError(t("change_password.not_match"));
             return;
         }
         const result = await changePassword(oldPassword, newPassword);
         if (result.success) {
-            setSuccessMessage(result.message || "Password changed successfully!");
+            setSuccessMessage(result.message || t("change_password.success"));
             setOldPassword("");
             setNewPassword("");
             setConfirmPassword("");
-            if (result.message && result.message.includes("Please log in again")) {
+            if (result.message && result.message.includes(t("change_password.relogin"))) {
                 setTimeout(() => navigate({ to: "/login", replace: true }), 3000);
             }
         } else {
-            setError(result.error || "Failed to change password. Please check your details.");
+            setError(result.error || t("change_password.failed"));
         }
     };
 
@@ -62,20 +64,20 @@ function ChangePasswordComponent() {
                     className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
                 >
                     <ArrowLeft />
-                    Back to Dashboard
+                    {t("change_password.back")}
                 </Link>
             </div>
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle className="flex items-center text-2xl">
-                        <KeyRound className="mr-3 h-6 w-6 text-primary" /> Change Password
+                        <KeyRound className="mr-3 h-6 w-6 text-primary" /> {t("change_password.title")}
                     </CardTitle>
-                    <CardDescription>Update your password below. Make sure it's a strong one!</CardDescription>
+                    <CardDescription>{t("change_password.description")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="grid gap-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="oldPassword">Old Password</Label>
+                            <Label htmlFor="oldPassword">{t("change_password.old")}</Label>
                             <Input
                                 type="password"
                                 id="oldPassword"
@@ -86,7 +88,7 @@ function ChangePasswordComponent() {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="newPassword">New Password</Label>
+                            <Label htmlFor="newPassword">{t("change_password.new")}</Label>
                             <Input
                                 type="password"
                                 id="newPassword"
@@ -97,7 +99,7 @@ function ChangePasswordComponent() {
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Label htmlFor="confirmPassword">{t("change_password.confirm")}</Label>
                             <Input
                                 type="password"
                                 id="confirmPassword"
@@ -110,7 +112,7 @@ function ChangePasswordComponent() {
                         {error && (
                             <Alert variant="destructive">
                                 <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>Error</AlertTitle>
+                                <AlertTitle>{t("change_password.error")}</AlertTitle>
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}
@@ -120,17 +122,19 @@ function ChangePasswordComponent() {
                                 className="border-green-500 text-green-700 dark:border-green-600 dark:text-green-400"
                             >
                                 <CheckCircle2 className="h-4 w-4 text-green-500 dark:text-green-400" />
-                                <AlertTitle className="text-green-700 dark:text-green-500">Success</AlertTitle>
+                                <AlertTitle className="text-green-700 dark:text-green-500">
+                                    {t("change_password.success_title")}
+                                </AlertTitle>
                                 <AlertDescription>{successMessage}</AlertDescription>
                             </Alert>
                         )}
                         <Button type="submit" className="w-full" disabled={isLoadingPasswordChange}>
                             {isLoadingPasswordChange ? (
                                 <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Changing...
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("change_password.changing")}
                                 </>
                             ) : (
-                                "Change Password"
+                                t("change_password.button")
                             )}
                         </Button>
                     </form>

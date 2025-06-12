@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Folder, ArrowUpCircle, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface DirectoryBrowserModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
     const [isLoading, setIsLoading] = useState(false); // Overall loading for initial/empty states
     const [loadingItemPath, setLoadingItemPath] = useState<string | null>(null); // For item-specific loading
     const [error, setError] = useState<string | null>(null);
+    const { t } = useTranslation();
 
     const fetchPathContents = useCallback(
         async (pathToList: string | undefined) => {
@@ -38,14 +40,14 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                 setCurrentPath(result.path);
             } catch (err: any) {
                 console.error("Error browsing directories:", err);
-                setError(err.message || "Failed to load directory contents.");
+                setError(err.message || t("dir_browser.error_failed"));
                 setDirectories([]);
             } finally {
                 setIsLoading(false);
                 setLoadingItemPath(null); // Clear item-specific loader regardless of outcome
             }
         },
-        [initialPath],
+        [t],
     );
 
     useEffect(() => {
@@ -63,8 +65,6 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
     const handleDirectoryClick = (dir: ApiTypes.DirectoryEntry) => {
         if (loadingItemPath === dir.path) return; // Prevent re-click if already loading this item
         setLoadingItemPath(dir.path);
-        // No need to set setIsLoading(true) here as fetchPathContents handles its own general loading state
-        // and we use loadingItemPath for specific item indication.
         fetchPathContents(dir.path);
     };
 
@@ -77,11 +77,11 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[625px]">
                 <DialogHeader>
-                    <DialogTitle>Browse for Folder</DialogTitle>
+                    <DialogTitle>{t("dir_browser.title")}</DialogTitle>
                     <DialogDescription>
-                        Select a folder to use as a preset path. Current path:{" "}
+                        {t("dir_browser.desc")} <span>{t("dir_browser.current_path")}</span>
                         <code className="font-mono bg-muted px-1 py-0.5 rounded text-sm break-all">
-                            {currentPath || "Loading..."}
+                            {currentPath || t("dir_browser.loading")}
                         </code>
                     </DialogDescription>
                 </DialogHeader>
@@ -89,7 +89,7 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                 {error && (
                     <Alert variant="destructive" className="my-4">
                         <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
+                        <AlertTitle>{t("dir_browser.error")}</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 )}
@@ -98,11 +98,11 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                     {isLoading && directories.length === 0 && !loadingItemPath ? (
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="ml-2">Loading directories...</p>
+                            <p className="ml-2">{t("dir_browser.loading")}</p>
                         </div>
                     ) : directories.length === 0 && !isLoading ? (
                         <div className="flex items-center justify-center h-full">
-                            <p className="text-muted-foreground">No sub-directories found.</p>
+                            <p className="text-muted-foreground">{t("dir_browser.empty")}</p>
                         </div>
                     ) : (
                         <ul className="flex flex-col gap-1 items-stretch min-w-0">
@@ -137,12 +137,12 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                 <DialogFooter className="sm:justify-between">
                     <DialogClose asChild>
                         <Button type="button" variant="outline">
-                            Cancel
+                            {t("dir_browser.cancel")}
                         </Button>
                     </DialogClose>
                     <Button type="button" onClick={handleSelectCurrentPath} disabled={isLoading || !currentPath}>
                         <CheckCircle className="mr-2 h-4 w-4" />
-                        Select Current Path
+                        {t("dir_browser.select")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

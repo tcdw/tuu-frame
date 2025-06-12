@@ -81,4 +81,15 @@ export interface LocaleKeys {
 
     // __root.tsx
     "root.loading_auth": string;
+
+    // 目录浏览器 DirectoryBrowserModal
+    "dir_browser.title": string;
+    "dir_browser.desc": string;
+    "dir_browser.current_path": string;
+    "dir_browser.loading": string;
+    "dir_browser.error": string;
+    "dir_browser.error_failed": string;
+    "dir_browser.empty": string;
+    "dir_browser.cancel": string;
+    "dir_browser.select": string;
 }

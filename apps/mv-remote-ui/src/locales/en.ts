@@ -1,7 +1,9 @@
 // English translation file for i18n
 // Key must match LocaleKeys in locales.d.ts
 
-const en = {
+import type { LocaleKeys } from "@/locales";
+
+const en: LocaleKeys = {
     // Common
     error: "Error",
     success: "Success",
@@ -81,6 +83,17 @@ const en = {
 
     // __root.tsx
     "root.loading_auth": "Loading authentication...",
+
+    // dir_browser.*
+    "dir_browser.title": "Browse for Folder",
+    "dir_browser.desc": "Select a folder to use as a preset path. Current path:",
+    "dir_browser.current_path": "Current path:",
+    "dir_browser.loading": "Loading...",
+    "dir_browser.error": "Error",
+    "dir_browser.error_failed": "Failed to load directory contents.",
+    "dir_browser.empty": "No sub-directories found.",
+    "dir_browser.cancel": "Cancel",
+    "dir_browser.select": "Select Current Path",
 };
 
 export default en;

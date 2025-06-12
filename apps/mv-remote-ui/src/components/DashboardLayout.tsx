@@ -12,18 +12,23 @@ interface DashboardLayoutProps {
     pageTitle?: string;
 }
 
-const NAV_ITEMS = [
-    { label: "仪表盘", icon: Home, to: "/app/dashboard", group: "导航" },
-    { label: "监控", icon: Monitor, to: "/app/monitor", group: "导航" },
-    { label: "修改密码", icon: KeyRound, to: "/app/settings/change-password", group: "设置" },
-];
-
 export function DashboardLayout({ children, pageTitle = "仪表盘" }: DashboardLayoutProps) {
     const logout = useAuthStore(state => state.logout);
     const username = useAuthStore(state => state.username);
     const navigate = useNavigate();
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
+
+    const NAV_ITEMS = [
+        { label: t("nav.dashboard"), icon: Home, to: "/app/dashboard", group: t("nav.group_navigation") },
+        { label: t("nav.monitor"), icon: Monitor, to: "/app/monitor", group: t("nav.group_navigation") },
+        {
+            label: t("nav.change_password"),
+            icon: KeyRound,
+            to: "/app/settings/change-password",
+            group: t("nav.group_settings"),
+        },
+    ];
 
     const handleLogout = async () => {
         await logout();
@@ -37,7 +42,7 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
         <aside className="flex flex-col h-full w-64 border-r bg-card text-card-foreground px-4 py-6">
             {/* Logo 区域 */}
             <div className="flex items-center h-12 font-bold text-lg px-2 mb-8 tracking-tight select-none">
-                <span className="rounded bg-primary/10 px-2 py-1 mr-2 text-primary">MV</span> Player
+                <span className="rounded bg-primary/10 px-2 py-1 mr-2 text-primary">MV</span> {t("nav.mv_player")}
             </div>
             <nav className="flex-1 flex flex-col gap-2">
                 {navGroups.map(group => (
@@ -74,7 +79,7 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
                     </div>
                 )}
                 <Button variant="outline" className="w-full justify-start gap-2 mb-2" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4" /> 退出
+                    <LogOut className="h-4 w-4" /> {t("nav.logout")}
                 </Button>
                 <div className="mt-2">
                     <Select value={i18n.language} onValueChange={lng => i18n.changeLanguage(lng)}>
@@ -106,7 +111,7 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
             <div className="hidden md:flex h-screen sticky top-0 left-0 z-30">{Sidebar}</div>
             {/* 移动端抽屉按钮 */}
             <div className="md:hidden fixed top-4 left-4 z-40">
-                <Button variant="outline" size="icon" onClick={() => setDrawerOpen(true)} aria-label="菜单">
+                <Button variant="outline" size="icon" onClick={() => setDrawerOpen(true)} aria-label={t("nav.menu")}>
                     <MenuIcon className="h-5 w-5" />
                 </Button>
             </div>
@@ -118,7 +123,7 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
                         <button
                             className="absolute top-4 right-4"
                             onClick={() => setDrawerOpen(false)}
-                            aria-label="关闭"
+                            aria-label={t("nav.close")}
                         >
                             <CloseIcon className="h-5 w-5" />
                         </button>

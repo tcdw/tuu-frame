@@ -52,6 +52,7 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
                             {NAV_ITEMS.filter(i => i.group === group).map(item => (
                                 <Link
                                     to={item.to}
+                                    key={item.to}
                                     className="w-full"
                                     activeOptions={{ exact: true }}
                                     activeProps={{ className: "bg-secondary text-secondary-foreground" }}
@@ -84,10 +85,20 @@ export function DashboardLayout({ children, pageTitle = "仪表盘" }: Dashboard
                 <div className="mt-2">
                     <Select value={i18n.language} onValueChange={lng => i18n.changeLanguage(lng)}>
                         <SelectTrigger className="w-full">
-                            {i18n.language === "zh" ? "简体中文" : "English"}
+                            {(() => {
+                                switch (i18n.language) {
+                                    case "zh-CN":
+                                        return "简体中文（中国大陆）";
+                                    case "zh-TW":
+                                        return "繁體中文（台灣）";
+                                    default:
+                                        return "English";
+                                }
+                            })()}
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="zh">简体中文</SelectItem>
+                            <SelectItem value="zh-CN">简体中文（中国大陆）</SelectItem>
+                            <SelectItem value="zh-TW">繁體中文（台灣）</SelectItem>
                             <SelectItem value="en">English</SelectItem>
                         </SelectContent>
                     </Select>

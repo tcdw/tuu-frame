@@ -1,12 +1,12 @@
-// 简体中文翻译文件，key 必须与 locales.d.ts 完全一致
+// 简体中文（中国大陆）翻译文件，key 必须与 locales.d.ts 完全一致
 
 import type { LocaleKeys } from "@/locales";
 
-const zh: LocaleKeys = {
+const zhHansCN: LocaleKeys = {
     // 通用
     error: "错误",
     success: "成功",
-    loading: "加载中...",
+    loading: "加载中……",
 
     // 登录页
     "login.title": "登录",
@@ -16,20 +16,20 @@ const zh: LocaleKeys = {
     "login.username_required": "用户名为必填项",
     "login.password_required": "密码为必填项",
     "login.failed": "登录失败，请检查您的凭据。",
-    "login.logging_in": "正在登录...",
+    "login.logging_in": "正在登录……",
     "login.button": "登录",
 
     // 仪表盘
     "dashboard.title": "预设文件夹",
     "dashboard.description": "管理你保存的预设文件夹。点击播放可设为当前目录。",
     "dashboard.error": "错误",
-    "dashboard.loading": "正在加载预设...",
+    "dashboard.loading": "正在加载预设……",
     "dashboard.empty": "暂无预设，请在下方添加。",
     "dashboard.play": "播放",
     "dashboard.delete": "删除",
     "dashboard.set_active_dir": "设置当前目录",
     "dashboard.set_active_dir_desc": "手动输入路径或选择预设开始播放。",
-    "dashboard.input_placeholder": "输入绝对路径或点击预设的'播放'",
+    "dashboard.input_placeholder": "输入绝对路径或点击预设的「播放」按钮",
     "dashboard.set_and_play": "设置并播放",
     "dashboard.preset_path_empty": "预设路径不能为空。",
     "dashboard.preset_update_failed": "操作已完成，但未能从响应中更新列表。",
@@ -57,13 +57,13 @@ const zh: LocaleKeys = {
     "change_password.failed": "修改密码失败，请检查信息。",
     "change_password.error": "错误",
     "change_password.success_title": "成功",
-    "change_password.changing": "正在修改...",
+    "change_password.changing": "正在修改……",
     "change_password.button": "修改密码",
 
     // 监控
     "monitor.back": "返回仪表盘",
     "monitor.title": "远程播放器监控",
-    "monitor.description": "实时查看 mv-player 窗口，定时刷新画面。",
+    "monitor.description": "实时查看远程播放器画面，并且定时刷新。",
     "monitor.play": "播放",
     "monitor.pause": "暂停",
     "monitor.next": "下一曲",
@@ -81,13 +81,13 @@ const zh: LocaleKeys = {
     "nav.user": "用户",
 
     // __root.tsx
-    "root.loading_auth": "正在加载认证信息...",
+    "root.loading_auth": "正在加载认证信息……",
 
     // 目录浏览器 DirectoryBrowserModal
     "dir_browser.title": "选择文件夹",
     "dir_browser.desc": "选择一个文件夹作为预设路径。当前路径：",
     "dir_browser.current_path": "当前路径：",
-    "dir_browser.loading": "加载中...",
+    "dir_browser.loading": "加载中……",
     "dir_browser.error": "错误",
     "dir_browser.error_failed": "加载目录内容失败。",
     "dir_browser.empty": "未找到子文件夹。",
@@ -95,4 +95,4 @@ const zh: LocaleKeys = {
     "dir_browser.select": "选择当前路径",
 };
 
-export default zh;
+export default zhHansCN;

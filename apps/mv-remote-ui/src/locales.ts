@@ -12,6 +12,8 @@ export interface LocaleKeys {
     "login.description": string;
     "login.username": string;
     "login.password": string;
+    "login.username_placeholder": string;
+    "login.password_placeholder": string;
     "login.username_required": string;
     "login.password_required": string;
     "login.failed": string;

@@ -13,6 +13,8 @@ const zhHansCN: LocaleKeys = {
     "login.description": "请输入用户名和密码以访问您的账户。",
     "login.username": "用户名",
     "login.password": "密码",
+    "login.username_placeholder": "请输入用户名",
+    "login.password_placeholder": "请输入密码",
     "login.username_required": "用户名为必填项",
     "login.password_required": "密码为必填项",
     "login.failed": "登录失败，请检查您的凭据。",

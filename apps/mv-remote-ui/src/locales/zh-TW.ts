@@ -11,6 +11,8 @@ const zhTW: LocaleKeys = {
     "login.description": "請輸入使用者名稱及密碼以登入帳號。",
     "login.username": "使用者名稱",
     "login.password": "密碼",
+    "login.username_placeholder": "請輸入使用者名稱",
+    "login.password_placeholder": "請輸入密碼",
     "login.username_required": "使用者名稱為必填欄位",
     "login.password_required": "密碼為必填欄位",
     "login.failed": "登入失敗，請檢查您的資料。",

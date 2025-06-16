@@ -14,6 +14,8 @@ const en: LocaleKeys = {
     "login.description": "Enter your username and password to access your account.",
     "login.username": "Username",
     "login.password": "Password",
+    "login.username_placeholder": "Enter username",
+    "login.password_placeholder": "Enter password",
     "login.username_required": "Username is required",
     "login.password_required": "Password is required",
     "login.failed": "Login failed. Please check your credentials.",

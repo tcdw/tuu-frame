@@ -40,7 +40,7 @@ function LoginComponent() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="flex min-h-[100svh] items-center justify-center bg-background p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader>
                     <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
@@ -53,7 +53,7 @@ function LoginComponent() {
                             <Input
                                 id="username"
                                 type="text"
-                                placeholder={t("login.username")}
+                                placeholder={t("login.username_placeholder")}
                                 autoComplete="username"
                                 {...register("username", { required: t("login.username_required") })}
                             />
@@ -64,7 +64,7 @@ function LoginComponent() {
                             <Input
                                 id="password"
                                 type="password"
-                                placeholder={t("login.password")}
+                                placeholder={t("login.password_placeholder")}
                                 autoComplete="current-password"
                                 {...register("password", { required: t("login.password_required") })}
                             />

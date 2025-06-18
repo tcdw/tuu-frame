@@ -20,6 +20,16 @@ import {
 } from "lucide-react";
 import { DirectoryBrowserModal } from "@/components/DirectoryBrowserModal";
 import { useTranslation } from "react-i18next";
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogFooter,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogAction,
+    AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/app/dashboard")({
     component: DashboardComponent,
@@ -36,6 +46,7 @@ function DashboardComponent() {
     const [error, setError] = useState<string | null>(null);
     const [loadingPresets, setLoadingPresets] = useState<boolean>(true);
     const { t } = useTranslation();
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -129,7 +140,7 @@ function DashboardComponent() {
                 </Alert>
             )}
 
-            <Card className="mb-8">
+            <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center">
                         <ListVideo className="mr-2 h-5 w-5 text-primary" />
@@ -162,21 +173,23 @@ function DashboardComponent() {
                                     </div>
                                     <div className="flex space-x-2 self-end sm:self-center">
                                         <Button
-                                            variant="outline"
-                                            size="sm"
+                                            variant="ghost"
+                                            size="icon"
+                                            title={t("dashboard.play")}
                                             onClick={() => {
                                                 setActiveDirectoryPath(preset.path);
                                                 handleSetActiveDirectory(preset.path);
                                             }}
                                         >
-                                            <Play /> {t("dashboard.play")}
+                                            <Play />
                                         </Button>
                                         <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeletePreset(preset.id)}
+                                            variant="ghost"
+                                            size="icon"
+                                            title={t("dashboard.delete")}
+                                            onClick={() => setDeleteConfirmId(preset.id)}
                                         >
-                                            <Trash2 /> {t("dashboard.delete")}
+                                            <Trash2 />
                                         </Button>
                                     </div>
                                 </li>
@@ -270,6 +283,34 @@ function DashboardComponent() {
                     setIsBrowserModalOpen(false);
                 }}
             />
+
+            <AlertDialog
+                open={!!deleteConfirmId}
+                onOpenChange={open => {
+                    if (!open) setDeleteConfirmId(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t("dashboard.delete_confirm_title")}</AlertDialogTitle>
+                        <AlertDialogDescription>{t("dashboard.delete_confirm_desc")}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t("dashboard.delete_confirm_cancel")}</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={async () => {
+                                if (deleteConfirmId) {
+                                    await handleDeletePreset(deleteConfirmId);
+                                    setDeleteConfirmId(null);
+                                }
+                            }}
+                        >
+                            {t("dashboard.delete_confirm_ok")}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

@@ -45,6 +45,10 @@ const en: LocaleKeys = {
     "dashboard.open_monitor": "Open Monitor Page",
     "dashboard.input_name_placeholder": "Preset Name (optional)",
     "dashboard.input_path_placeholder": "Preset Path (e.g., /Users/name/videos)",
+    "dashboard.delete_confirm_title": "Confirm Delete",
+    "dashboard.delete_confirm_desc": "Are you sure you want to delete this preset? This action cannot be undone.",
+    "dashboard.delete_confirm_cancel": "Cancel",
+    "dashboard.delete_confirm_ok": "Delete",
 
     // Change password
     "change_password.back": "Back to Dashboard",

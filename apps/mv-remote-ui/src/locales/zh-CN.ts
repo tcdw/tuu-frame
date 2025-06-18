@@ -44,6 +44,10 @@ const zhHansCN: LocaleKeys = {
     "dashboard.open_monitor": "打开监控页面",
     "dashboard.input_name_placeholder": "预设名称（可选）",
     "dashboard.input_path_placeholder": "预设路径（如 /Users/name/videos）",
+    "dashboard.delete_confirm_title": "确认删除",
+    "dashboard.delete_confirm_desc": "确定要删除该预设吗？此操作不可撤销。",
+    "dashboard.delete_confirm_cancel": "取消",
+    "dashboard.delete_confirm_ok": "删除",
 
     // 修改密码
     "change_password.back": "返回仪表盘",

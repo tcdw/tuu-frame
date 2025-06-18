@@ -43,6 +43,10 @@ export interface LocaleKeys {
     "dashboard.open_monitor": string;
     "dashboard.input_name_placeholder": string;
     "dashboard.input_path_placeholder": string;
+    "dashboard.delete_confirm_title": string;
+    "dashboard.delete_confirm_desc": string;
+    "dashboard.delete_confirm_cancel": string;
+    "dashboard.delete_confirm_ok": string;
 
     // 修改密码 settings.change-password.tsx
     "change_password.back": string;

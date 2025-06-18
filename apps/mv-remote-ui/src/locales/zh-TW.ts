@@ -42,6 +42,10 @@ const zhTW: LocaleKeys = {
     "dashboard.open_monitor": "開啟監控頁面",
     "dashboard.input_name_placeholder": "預設名稱（可選）",
     "dashboard.input_path_placeholder": "預設路徑（如 /Users/name/videos）",
+    "dashboard.delete_confirm_title": "確認刪除",
+    "dashboard.delete_confirm_desc": "確定要刪除此預設嗎？此操作無法還原。",
+    "dashboard.delete_confirm_cancel": "取消",
+    "dashboard.delete_confirm_ok": "刪除",
 
     // 修改密碼
     "change_password.back": "返回儀表板",

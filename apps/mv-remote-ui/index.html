@@ -7,11 +7,17 @@
     <script type="module">
         // On page load or when changing themes, best to add inline in `head` to avoid FOUC
         function handleToggle() {
-            document.documentElement.classList.toggle(
+            const ddc = document.documentElement.classList;
+            ddc.toggle(
                 "dark",
                 localStorage.theme === "dark" ||
                 (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches),
             );
+            if (ddc.contains("dark")) {
+                document.documentElement.style.setProperty("color-scheme", "dark");
+            } else {
+                document.documentElement.style.setProperty("color-scheme", "light");
+            }
         }
 
         window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", handleToggle);

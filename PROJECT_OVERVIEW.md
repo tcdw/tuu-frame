@@ -11,7 +11,7 @@ This project is structured as a **monorepo** managed by **Turborepo** and **pnpm
 The monorepo contains two main applications, located within the `apps/` directory at the project root (`/Users/tcdw/Projects/mtv/`):
 
 *   **`mv-player`**: The Electron application for local video playback. (Path: `apps/mv-player/`)
-*   **`mv-remote-ui`**: A Vite + React + TypeScript web application for remote control. (Path: `apps/mv-remote-ui/`)
+*   **`mv-remote-ui`**: A Rsbuild + React + TypeScript web application for remote control. (Path: `apps/mv-remote-ui/`)
 
 ### Key Monorepo Files (at project root):
 *   `package.json`: Defines root dependencies (like Turborepo), scripts for monorepo tasks (e.g., `pnpm dev`, `pnpm build`), and specifies `pnpm` as the package manager.
@@ -99,7 +99,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 
 *   **Framework/Library**: React, TanStack Router
 *   **Language**: TypeScript
-*   **Build Tool**: Vite (orchestrated by Turborepo)
+*   **Build Tool**: Rsbuild (orchestrated by Turborepo)
 *   **Styling**: Tailwind CSS v4, shadcn/ui
 *   **State Management**: Zustand (for authentication and potentially other global states)
 *   **API Communication**: Axios
@@ -111,7 +111,7 @@ Located in the `apps/mv-remote-ui/` directory within the monorepo.
 *   `src/routes/`: Directory containing route components (e.g., `__root.tsx`, `login.tsx`, `dashboard.tsx`).
 *   `src/auth.tsx`: `AuthContext` for authentication state management.
 *   `src/services/api.ts`: Module for API communication with `mv-player`.
-*   `vite.config.ts`: Vite build configuration, including TanStack Router plugin.
+*   `rsbuild.config.ts`: Rsbuild build configuration, including TanStack Router plugin.
 *   `package.json`: Project dependencies and scripts.
 
 ### 路由与统一布局
@@ -160,7 +160,7 @@ export const Route = createFileRoute("/app")({
 ## 5. Current Status & Next Steps
 
 *   **Monorepo Transition**: The project has been successfully converted to a monorepo structure using Turborepo and pnpm workspaces. This enhances project organization, build efficiency, and dependency management.
-*   **`mv-player` & `mv-remote-ui` Integration**: The system is now fully functional with `mv-player` serving its own UI in the Electron window and simultaneously serving the `mv-remote-ui` via an embedded Express server on port `15678` (accessible on the LAN). This setup works correctly in both development (Vite dev servers, flexible CORS) and production (packaged assets, stricter same-origin policy for Express server). Packaging via `electron-builder` (configured in `electron-builder.json5`) correctly includes all necessary assets (`mv-player`'s `dist/`, `dist-electron/`, and `remote-ui-assets/`).
+*   **`mv-player` & `mv-remote-ui` Integration**: The system is now fully functional with `mv-player` serving its own UI in the Electron window and simultaneously serving the `mv-remote-ui` via an embedded Express server on port `15678` (accessible on the LAN). This setup works correctly in both development (Rsbuild dev servers, flexible CORS) and production (packaged assets, stricter same-origin policy for Express server). Packaging via `electron-builder` (configured in `electron-builder.json5`) correctly includes all necessary assets (`mv-player`'s `dist/`, `dist-electron/`, and `remote-ui-assets/`).
 *   **Authentication**: Enhanced single-user authentication is implemented. This includes client-side HMAC-SHA512 password hashing (using a server-provided public salt) in `mv-remote-ui` before transmission, followed by server-side bcrypt hashing in `mv-player`. JWTs are used for API authorization.
 *   **Monorepo Structure**: Successfully managed by Turborepo and pnpm workspaces.
 
@@ -183,9 +183,9 @@ export const Route = createFileRoute("/app")({
 *   **Remote UI Playback Status (`mv-remote-ui`):**
     *   The `/monitor` page now fetches and displays the live playback status from the `mv-player`.
     *   The Play/Pause button dynamically updates its icon based on the actual playback state.
-*   **Vite Dev Server Proxy & LAN Exposure (`mv-remote-ui`):**
-    *   Configured the `mv-remote-ui` Vite development server to proxy `/api` requests to the `mv-player` backend (running on `http://localhost:15678`). This streamlines development by avoiding the need for full remote UI rebuilds when only backend API changes occur.
-    *   Exposed the Vite dev server on the LAN (`host: '0.0.0.0'`) for easier testing on multiple devices.
+*   **Rsbuild Dev Server Proxy & LAN Exposure (`mv-remote-ui`):**
+    *   Configured the `mv-remote-ui` Rsbuild development server to proxy `/api` requests to the `mv-player` backend (running on `http://localhost:15678`). This streamlines development by avoiding the need for full remote UI rebuilds when only backend API changes occur.
+    *   Exposed the Rsbuild dev server on the LAN (`host: '0.0.0.0'`) for easier testing on multiple devices.
 
 ### 本地播放器监控提示（2025-06-09 新增）：
 *   当远程访问 `/api/monitor/snapshot.jpg`（如监控页面轮询快照）时，Electron 主进程会通过 IPC 向 renderer 发送"监看中"信号。

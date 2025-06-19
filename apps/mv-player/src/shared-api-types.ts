@@ -102,6 +102,19 @@ export interface BrowseDirectoriesData {
 }
 export type BrowseDirectoriesResponse = ApiResponse<BrowseDirectoriesData>;
 
+// --- /api/list-drives ---
+export interface DriveEntry {
+    name: string;        // Display name (e.g., "C:", "D:")
+    path: string;        // Full path (e.g., "C:\", "D:\")
+    isDirectory: boolean; // Always true for drives
+    label?: string;      // Optional volume label
+}
+
+export interface ListDrivesData {
+    drives: DriveEntry[];
+}
+export type ListDrivesResponse = ApiResponse<ListDrivesData>;
+
 // --- /api/auth/change-credentials ---
 // This is what the UI form will produce (plaintext passwords)
 export interface ChangeCredentialsRequest {

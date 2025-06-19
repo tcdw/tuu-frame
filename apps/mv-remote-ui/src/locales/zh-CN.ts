@@ -93,12 +93,15 @@ const zhHansCN: LocaleKeys = {
     "dir_browser.title": "选择文件夹",
     "dir_browser.desc": "选择一个文件夹作为预设路径。当前路径：",
     "dir_browser.current_path": "当前路径：",
-    "dir_browser.loading": "加载中……",
+    "dir_browser.loading": "加载中...",
     "dir_browser.error": "错误",
     "dir_browser.error_failed": "加载目录内容失败。",
     "dir_browser.empty": "未找到子文件夹。",
     "dir_browser.cancel": "取消",
     "dir_browser.select": "选择当前路径",
+    "dir_browser.drives": "磁盘",
+    "dir_browser.back_to_drives": "返回磁盘",
+    "dir_browser.no_drives": "未找到磁盘。",
 };
 
 export default zhHansCN;

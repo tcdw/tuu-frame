@@ -2,7 +2,7 @@ import express, { Request, Response, RequestHandler } from "express";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
 import * as ApiTypes from "../src/shared-api-types.ts";
-import { loadPresets, savePresets, scanDirectoryForVideos } from "./functions.ts";
+import { loadPresets, savePresets, scanDirectoryForVideos, getAvailableDrives } from "./functions.ts";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -245,6 +245,27 @@ export function createServer(win: BrowserWindow): Promise<void> {
         res.json({ code: 200, data: presets, err: null });
     }) as any);
 
+    // List Available Drives (Windows)
+    expressApp.get("/api/list-drives", authenticateToken, (async (
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.ListDrivesResponse>,
+    ) => {
+        try {
+            const drives = await getAvailableDrives();
+            const driveEntries: ApiTypes.DriveEntry[] = drives.map(drive => ({
+                name: drive.name,
+                path: drive.path,
+                isDirectory: true,
+                label: drive.label
+            }));
+            
+            res.json({ code: 200, data: { drives: driveEntries }, err: null });
+        } catch (error: any) {
+            console.error("Error listing drives:", error);
+            res.status(500).json({ code: 500, data: null, err: `Error listing drives: ${error.message}` });
+        }
+    }) as any);
+
     // Browse Directories
     expressApp.get("/api/browse-directories", authenticateToken, (async (
         req: AuthenticatedRequest,
@@ -253,25 +274,20 @@ export function createServer(win: BrowserWindow): Promise<void> {
         const currentPath = typeof req.query.path === "string" ? req.query.path : app.getPath("home");
 
         try {
-            // Security check: Prevent going above the home directory or a predefined root for simplicity
-            // More robust sandboxing might be needed for a production app.
+            // Security check: Allow browsing home directory, its subdirectories, and Windows drive roots
             const homeDir = app.getPath("home");
-            if (!path.resolve(currentPath).startsWith(path.resolve(homeDir))) {
-                // Or, if you want to allow browsing other drives/mount points, adjust this logic.
-                // For now, restrict to home directory and its subdirectories.
-                // We can make this more flexible later, e.g. by listing drives on initial call.
-                if (currentPath !== homeDir && currentPath !== path.dirname(currentPath)) {
-                    // Allow listing home itself
-                    // A simple check to allow listing initial drives if currentPath is a root (e.g., 'C:\' or '/')
-                    // This check is very basic and OS-dependent.
-                    // A more robust solution would list mounted drives.
-                    const isRoot = currentPath === path.parse(currentPath).root;
-                    if (!isRoot) {
-                        console.warn(`Attempt to browse outside allowed root: ${currentPath}`);
-                        return res
-                            .status(403)
-                            .json({ code: 403, data: null, err: "Access denied: Cannot browse above home directory." });
-                    }
+            const isHomeOrSubdir = path.resolve(currentPath).startsWith(path.resolve(homeDir));
+            const isWindowsDriveRoot = process.platform === 'win32' && currentPath.match(/^[A-Z]:\\?$/);
+            
+            if (!isHomeOrSubdir && !isWindowsDriveRoot) {
+                // Check if it's a subdirectory of a Windows drive
+                const isWindowsDriveSubdir = process.platform === 'win32' && currentPath.match(/^[A-Z]:\\.+/);
+                
+                if (!isWindowsDriveSubdir) {
+                    console.warn(`Attempt to browse outside allowed paths: ${currentPath}`);
+                    return res
+                        .status(403)
+                        .json({ code: 403, data: null, err: "Access denied: Cannot browse outside allowed directories." });
                 }
             }
 
@@ -285,8 +301,11 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 }))
                 .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
 
-            // Add a way to go "up" one directory
-            if (path.resolve(currentPath) !== path.resolve(homeDir) && currentPath !== path.parse(currentPath).root) {
+            // Add a way to go "up" one directory, but not above drive root on Windows
+            const isAtDriveRoot = process.platform === 'win32' && currentPath.match(/^[A-Z]:\\?$/);
+            const isAtHomeRoot = path.resolve(currentPath) === path.resolve(homeDir);
+            
+            if (!isAtHomeRoot && !isAtDriveRoot) {
                 directoryEntries.unshift({
                     name: ".. (Up)",
                     path: path.dirname(currentPath),

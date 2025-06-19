@@ -108,6 +108,14 @@ export async function browseDirectories(currentPath?: string): Promise<ApiTypes.
     return apiClient.get<ApiTypes.BrowseDirectoriesResponse, ApiTypes.BrowseDirectoriesData>("/browse-directories", { params });
 }
 
+/**
+ * Fetches available drives from the server (Windows only).
+ * API returns: DriveEntry[]
+ */
+export async function listDrives(): Promise<ApiTypes.ListDrivesData> {
+    return apiClient.get<ApiTypes.ListDrivesResponse, ApiTypes.ListDrivesData>("/list-drives");
+}
+
 // --- Player Control API Calls ---
 
 /**

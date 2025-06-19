@@ -100,6 +100,9 @@ const en: LocaleKeys = {
     "dir_browser.empty": "No sub-directories found.",
     "dir_browser.cancel": "Cancel",
     "dir_browser.select": "Select Current Path",
+    "dir_browser.drives": "Drives",
+    "dir_browser.back_to_drives": "Back to Drives",
+    "dir_browser.no_drives": "No drives found.",
 };
 
 export default en;

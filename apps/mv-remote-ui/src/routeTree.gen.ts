@@ -8,120 +8,45 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteRouteImport } from './routes/app/route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppMonitorRouteImport } from './routes/app/monitor'
+import { Route as AppDashboardRouteImport } from './routes/app/dashboard'
+import { Route as AppSettingsChangePasswordRouteImport } from './routes/app/settings.change-password'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as LoginImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/app/route'
-import { Route as IndexImport } from './routes/index'
-import { Route as AppMonitorImport } from './routes/app/monitor'
-import { Route as AppDashboardImport } from './routes/app/dashboard'
-import { Route as AppSettingsChangePasswordImport } from './routes/app/settings.change-password'
-
-// Create/Update Routes
-
-const LoginRoute = LoginImport.update({
+const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AppRouteRoute = AppRouteImport.update({
+const AppRouteRoute = AppRouteRouteImport.update({
   id: '/app',
   path: '/app',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const AppMonitorRoute = AppMonitorImport.update({
+const AppMonitorRoute = AppMonitorRouteImport.update({
   id: '/monitor',
   path: '/monitor',
   getParentRoute: () => AppRouteRoute,
 } as any)
-
-const AppDashboardRoute = AppDashboardImport.update({
+const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppRouteRoute,
 } as any)
-
-const AppSettingsChangePasswordRoute = AppSettingsChangePasswordImport.update({
-  id: '/settings/change-password',
-  path: '/settings/change-password',
-  getParentRoute: () => AppRouteRoute,
-} as any)
-
-// Populate the FileRoutesByPath interface
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRoute
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginImport
-      parentRoute: typeof rootRoute
-    }
-    '/app/dashboard': {
-      id: '/app/dashboard'
-      path: '/dashboard'
-      fullPath: '/app/dashboard'
-      preLoaderRoute: typeof AppDashboardImport
-      parentRoute: typeof AppRouteImport
-    }
-    '/app/monitor': {
-      id: '/app/monitor'
-      path: '/monitor'
-      fullPath: '/app/monitor'
-      preLoaderRoute: typeof AppMonitorImport
-      parentRoute: typeof AppRouteImport
-    }
-    '/app/settings/change-password': {
-      id: '/app/settings/change-password'
-      path: '/settings/change-password'
-      fullPath: '/app/settings/change-password'
-      preLoaderRoute: typeof AppSettingsChangePasswordImport
-      parentRoute: typeof AppRouteImport
-    }
-  }
-}
-
-// Create and export the route tree
-
-interface AppRouteRouteChildren {
-  AppDashboardRoute: typeof AppDashboardRoute
-  AppMonitorRoute: typeof AppMonitorRoute
-  AppSettingsChangePasswordRoute: typeof AppSettingsChangePasswordRoute
-}
-
-const AppRouteRouteChildren: AppRouteRouteChildren = {
-  AppDashboardRoute: AppDashboardRoute,
-  AppMonitorRoute: AppMonitorRoute,
-  AppSettingsChangePasswordRoute: AppSettingsChangePasswordRoute,
-}
-
-const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
-  AppRouteRouteChildren,
-)
+const AppSettingsChangePasswordRoute =
+  AppSettingsChangePasswordRouteImport.update({
+    id: '/settings/change-password',
+    path: '/settings/change-password',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,7 +56,6 @@ export interface FileRoutesByFullPath {
   '/app/monitor': typeof AppMonitorRoute
   '/app/settings/change-password': typeof AppSettingsChangePasswordRoute
 }
-
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
@@ -140,9 +64,8 @@ export interface FileRoutesByTo {
   '/app/monitor': typeof AppMonitorRoute
   '/app/settings/change-password': typeof AppSettingsChangePasswordRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRoute
+  __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/app': typeof AppRouteRouteWithChildren
   '/login': typeof LoginRoute
@@ -150,7 +73,6 @@ export interface FileRoutesById {
   '/app/monitor': typeof AppMonitorRoute
   '/app/settings/change-password': typeof AppSettingsChangePasswordRoute
 }
-
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
@@ -178,60 +100,80 @@ export interface FileRouteTypes {
     | '/app/settings/change-password'
   fileRoutesById: FileRoutesById
 }
-
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRouteRoute: typeof AppRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
 }
 
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/monitor': {
+      id: '/app/monitor'
+      path: '/monitor'
+      fullPath: '/app/monitor'
+      preLoaderRoute: typeof AppMonitorRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/dashboard': {
+      id: '/app/dashboard'
+      path: '/dashboard'
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/app/settings/change-password': {
+      id: '/app/settings/change-password'
+      path: '/settings/change-password'
+      fullPath: '/app/settings/change-password'
+      preLoaderRoute: typeof AppSettingsChangePasswordRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+  }
+}
+
+interface AppRouteRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppMonitorRoute: typeof AppMonitorRoute
+  AppSettingsChangePasswordRoute: typeof AppSettingsChangePasswordRoute
+}
+
+const AppRouteRouteChildren: AppRouteRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppMonitorRoute: AppMonitorRoute,
+  AppSettingsChangePasswordRoute: AppSettingsChangePasswordRoute,
+}
+
+const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
+  AppRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRouteRoute: AppRouteRouteWithChildren,
   LoginRoute: LoginRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/app",
-        "/login"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/app": {
-      "filePath": "app/route.tsx",
-      "children": [
-        "/app/dashboard",
-        "/app/monitor",
-        "/app/settings/change-password"
-      ]
-    },
-    "/login": {
-      "filePath": "login.tsx"
-    },
-    "/app/dashboard": {
-      "filePath": "app/dashboard.tsx",
-      "parent": "/app"
-    },
-    "/app/monitor": {
-      "filePath": "app/monitor.tsx",
-      "parent": "/app"
-    },
-    "/app/settings/change-password": {
-      "filePath": "app/settings.change-password.tsx",
-      "parent": "/app"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

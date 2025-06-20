@@ -119,20 +119,8 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                 </DialogHeader>
 
                 {/* Drive/Path Navigation */}
-                <div className="flex gap-2 mb-4">
-                    <Button
-                        variant={showDrives ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                            setShowDrives(true);
-                            setCurrentPath("");
-                            setDirectories([]);
-                        }}
-                    >
-                        <HardDrive className="mr-2 h-4 w-4" />
-                        {t("dir_browser.drives")}
-                    </Button>
-                    {!showDrives && currentPath && (
+                {!showDrives && (
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
@@ -142,11 +130,11 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                                 setDirectories([]);
                             }}
                         >
-                            <ArrowUpCircle className="mr-2 h-4 w-4" />
+                            <HardDrive />
                             {t("dir_browser.back_to_drives")}
                         </Button>
-                    )}
-                </div>
+                    </div>
+                )}
 
                 {error && (
                     <Alert variant="destructive" className="my-4">
@@ -156,80 +144,104 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                     </Alert>
                 )}
 
-                <div className="h-[300px] w-full min-w-0 rounded-md border p-3 my-4 overflow-y-scroll">
-                    {isLoading && ((showDrives && drives.length === 0) || (!showDrives && directories.length === 0)) && !loadingItemPath ? (
-                        <div className="flex items-center justify-center h-full">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="ml-2">{t("dir_browser.loading")}</p>
-                        </div>
-                    ) : showDrives ? (
-                        // Show drives
-                        drives.length === 0 ? (
-                            <div className="flex items-center justify-center h-full">
-                                <p className="text-muted-foreground">{t("dir_browser.no_drives")}</p>
-                            </div>
-                        ) : (
-                            <ul className="flex flex-col gap-1 items-stretch min-w-0">
-                                {drives.map(drive => (
-                                    <li key={drive.name + drive.path} className={"contents"}>
-                                        <Button
-                                            variant="ghost"
-                                            className="min-w-0 w-full justify-start text-left h-auto py-2 px-3 overflow-hidden flex items-center space-x-2"
-                                            onClick={() => handleDriveClick(drive)}
-                                            title={drive.path}
-                                            disabled={loadingItemPath === drive.path}
-                                        >
-                                            {loadingItemPath === drive.path ? (
-                                                <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />
-                                            ) : (
-                                                <HardDrive className="h-5 w-5 text-green-500 flex-shrink-0" />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="truncate text-sm font-medium">{drive.name}</p>
-                                                {drive.label && (
-                                                    <p className="truncate text-xs text-muted-foreground">{drive.label}</p>
-                                                )}
-                                            </div>
-                                        </Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )
-                    ) : (
-                        // Show directories
-                        directories.length === 0 && !isLoading ? (
-                            <div className="flex items-center justify-center h-full">
-                                <p className="text-muted-foreground">{t("dir_browser.empty")}</p>
-                            </div>
-                        ) : (
-                            <ul className="flex flex-col gap-1 items-stretch min-w-0">
-                                {directories.map(dir => (
-                                    <li key={dir.name + dir.path} className={"contents"}>
-                                        <Button
-                                            variant="ghost"
-                                            className="min-w-0 w-full justify-start text-left h-auto py-2 px-3 overflow-hidden flex items-center space-x-2"
-                                            onClick={() => handleDirectoryClick(dir)}
-                                            title={dir.path}
-                                            disabled={loadingItemPath === dir.path}
-                                        >
-                                            {/* Icon with flex-shrink: 0 */}
-                                            {loadingItemPath === dir.path ? (
-                                                <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />
-                                            ) : dir.name === ".. (Up)" ? (
-                                                <ArrowUpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                            ) : (
-                                                <Folder className="h-5 w-5 text-blue-500 flex-shrink-0" />
-                                            )}
-                                            {/* Text wrapper that grows and shrinks */}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="truncate text-sm">{dir.name}</p>
-                                            </div>
-                                        </Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )
-                    )}
+                <div className="h-[300px] w-full min-w-0 rounded-md border p-3 my-2 overflow-y-scroll">
+                    {(() => {
+                        // 显示加载状态
+                        if (isLoading && ((showDrives && drives.length === 0) || (!showDrives && directories.length === 0)) && !loadingItemPath) {
+                            return (
+                                <div className="flex items-center justify-center h-full">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                    <p className="ml-2">{t("dir_browser.loading")}</p>
+                                </div>
+                            );
+                        }
+
+                        // 显示驱动器列表
+                        if (showDrives) {
+                            if (drives.length === 0) {
+                                return (
+                                    <div className="flex items-center justify-center h-full">
+                                        <p className="text-muted-foreground">{t("dir_browser.no_drives")}</p>
+                                    </div>
+                                );
+                            } else {
+                                return (
+                                    <ul className="flex flex-col gap-1 items-stretch min-w-0">
+                                        {drives.map(drive => (
+                                            <li key={drive.name + drive.path} className={"contents"}>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="min-w-0 w-full justify-start text-left h-auto py-2 px-3 overflow-hidden flex items-center space-x-2"
+                                                    onClick={() => handleDriveClick(drive)}
+                                                    title={drive.path}
+                                                    disabled={loadingItemPath === drive.path}
+                                                >
+                                                    {(() => {
+                                                        if (loadingItemPath === drive.path) {
+                                                            return <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />;
+                                                        } else {
+                                                            return <HardDrive className="h-5 w-5 text-green-500 flex-shrink-0" />;
+                                                        }
+                                                    })()}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="truncate text-sm font-medium">{drive.name}</p>
+                                                        {(() => {
+                                                            if (drive.label) {
+                                                                return (
+                                                                    <p className="truncate text-xs text-muted-foreground">{drive.label}</p>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
+                                                    </div>
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                );
+                            }
+                        } else {
+                            // 显示目录列表
+                            if (directories.length === 0 && !isLoading) {
+                                return (
+                                    <div className="flex items-center justify-center h-full">
+                                        <p className="text-muted-foreground">{t("dir_browser.empty")}</p>
+                                    </div>
+                                );
+                            } else {
+                                return (
+                                    <ul className="flex flex-col gap-1 items-stretch min-w-0">
+                                        {directories.map(dir => (
+                                            <li key={dir.name + dir.path} className={"contents"}>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="min-w-0 w-full justify-start text-left h-auto py-2 px-3 overflow-hidden flex items-center space-x-2"
+                                                    onClick={() => handleDirectoryClick(dir)}
+                                                    title={dir.path}
+                                                    disabled={loadingItemPath === dir.path}
+                                                >
+                                                    {/* Icon with flex-shrink: 0 */}
+                                                    {(() => {
+                                                        if (loadingItemPath === dir.path) {
+                                                            return <Loader2 className="h-5 w-5 animate-spin text-primary flex-shrink-0" />;
+                                                        } else if (dir.name === ".. (Up)") {
+                                                            return <ArrowUpCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" />;
+                                                        } else {
+                                                            return <Folder className="h-5 w-5 text-blue-500 flex-shrink-0" />;
+                                                        }
+                                                    })()}
+                                                    {/* Text wrapper that grows and shrinks */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="truncate text-sm">{dir.name}</p>
+                                                    </div>
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                );
+                            }
+                        }
+                    })()}
                 </div>
 
                 <DialogFooter className="sm:justify-between">

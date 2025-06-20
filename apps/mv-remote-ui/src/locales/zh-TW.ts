@@ -89,7 +89,7 @@ const zhTW: LocaleKeys = {
 
     // 目錄瀏覽器
     "dir_browser.title": "選擇資料夾",
-    "dir_browser.desc": "選擇一個資料夾作為預設路徑。目前路徑：",
+    "dir_browser.desc": "選擇一個資料夾作為預設路徑。",
     "dir_browser.current_path": "目前路徑：",
     "dir_browser.loading": "載入中……",
     "dir_browser.error": "錯誤",

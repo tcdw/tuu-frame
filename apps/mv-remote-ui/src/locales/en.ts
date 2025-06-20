@@ -92,8 +92,8 @@ const en: LocaleKeys = {
 
     // dir_browser.*
     "dir_browser.title": "Browse for Folder",
-    "dir_browser.desc": "Select a folder to use as a preset path. Current path:",
-    "dir_browser.current_path": "Current path:",
+    "dir_browser.desc": "Select a folder to use as a preset path.",
+    "dir_browser.current_path": " Current path:",
     "dir_browser.loading": "Loading...",
     "dir_browser.error": "Error",
     "dir_browser.error_failed": "Failed to load directory contents.",

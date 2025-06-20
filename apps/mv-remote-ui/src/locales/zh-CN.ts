@@ -91,7 +91,7 @@ const zhHansCN: LocaleKeys = {
 
     // 目录浏览器 DirectoryBrowserModal
     "dir_browser.title": "选择文件夹",
-    "dir_browser.desc": "选择一个文件夹作为预设路径。当前路径：",
+    "dir_browser.desc": "选择一个文件夹作为预设路径。",
     "dir_browser.current_path": "当前路径：",
     "dir_browser.loading": "加载中...",
     "dir_browser.error": "错误",

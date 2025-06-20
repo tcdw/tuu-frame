@@ -111,10 +111,12 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                 <DialogHeader>
                     <DialogTitle>{t("dir_browser.title")}</DialogTitle>
                     <DialogDescription>
-                        {t("dir_browser.desc")} <span>{t("dir_browser.current_path")}</span>
-                        <code className="font-mono bg-muted px-1 py-0.5 rounded text-sm break-all">
+                        {t("dir_browser.desc")}
+                        {showDrives ? null : <>
+                            <span>{t("dir_browser.current_path")}</span><code className="font-mono bg-muted px-1 py-0.5 rounded text-sm break-all">
                             {currentPath || t("dir_browser.loading")}
                         </code>
+                        </>}
                     </DialogDescription>
                 </DialogHeader>
 

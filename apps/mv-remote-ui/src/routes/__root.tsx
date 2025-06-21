@@ -1,6 +1,10 @@
 import { useEffect } from "react";
 import { Outlet, createRootRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useAuthStore } from "../auth";
+import { Toaster } from "@/components/ui/sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export const Route = createRootRoute({
     component: RootComponent,
@@ -34,9 +38,10 @@ function RootComponent() {
     }
 
     return (
-        <>
+        <QueryClientProvider client={queryClient}>
             <Outlet />
+            <Toaster />
             {/* You can add global layout components here if needed, e.g., a Navbar or Footer */}
-        </>
+        </QueryClientProvider>
     );
 }

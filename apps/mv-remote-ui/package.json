@@ -38,6 +38,7 @@
     "@tabler/icons-react": "^3.34.0",
     "@tailwindcss/postcss": "^4.1.10",
     "@tailwindcss/vite": "^4.1.10",
+    "@tanstack/react-query": "^5.81.0",
     "@tanstack/react-router": "^1.121.27",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.121.29",

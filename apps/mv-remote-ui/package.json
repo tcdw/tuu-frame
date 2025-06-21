@@ -40,7 +40,7 @@
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/react-router": "^1.121.27",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/router-plugin": "^1.121.27",
+    "@tanstack/router-plugin": "^1.121.29",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^22.15.32",
     "@types/react": "^19.1.8",

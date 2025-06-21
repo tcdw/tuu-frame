@@ -144,3 +144,10 @@ export async function nextTrackRemote(): Promise<ApiTypes.PlayerControlSuccessDa
 export async function getPlayerStatus(): Promise<ApiTypes.PlayerStatusData> {
     return apiClient.get<ApiTypes.PlayerStatusResponse, ApiTypes.PlayerStatusData>("/player/status");
 }
+
+/**
+ * Gets OS information from the server.
+ */
+export async function getOsInfo(): Promise<ApiTypes.OsInfoData> {
+    return apiClient.get<ApiTypes.OsInfoResponse, ApiTypes.OsInfoData>("/os-info");
+}

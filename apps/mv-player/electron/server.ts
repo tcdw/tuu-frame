@@ -178,6 +178,20 @@ export function createServer(win: BrowserWindow): Promise<void> {
         res.json({ code: 200, data: { message: "pong" }, err: null });
     });
 
+    // --- System Information ---
+    expressApp.get("/api/os-info", authenticateToken, ((
+        _req: AuthenticatedRequest,
+        res: Response<ApiTypes.OsInfoResponse>,
+    ) => {
+        try {
+            const isWindows = process.platform === "win32";
+            res.json({ code: 200, data: { isWindows }, err: null });
+        } catch (error) {
+            console.error("Error fetching OS info:", error);
+            res.status(500).json({ code: 500, data: null, err: "Internal server error fetching OS info." });
+        }
+    }) as any);
+
     // --- MJPEG Monitoring Stream ---
     expressApp.get(
         "/api/monitor/snapshot.jpg",
@@ -256,9 +270,8 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 name: drive.name,
                 path: drive.path,
                 isDirectory: true,
-                label: drive.label
+                label: drive.label,
             }));
-            
             res.json({ code: 200, data: { drives: driveEntries }, err: null });
         } catch (error: any) {
             console.error("Error listing drives:", error);
@@ -277,17 +290,21 @@ export function createServer(win: BrowserWindow): Promise<void> {
             // Security check: Allow browsing home directory, its subdirectories, and Windows drive roots
             const homeDir = app.getPath("home");
             const isHomeOrSubdir = path.resolve(currentPath).startsWith(path.resolve(homeDir));
-            const isWindowsDriveRoot = process.platform === 'win32' && currentPath.match(/^[A-Z]:\\?$/);
+            const isWindowsDriveRoot = process.platform === "win32" && currentPath.match(/^[A-Z]:\\?$/);
             
             if (!isHomeOrSubdir && !isWindowsDriveRoot) {
                 // Check if it's a subdirectory of a Windows drive
-                const isWindowsDriveSubdir = process.platform === 'win32' && currentPath.match(/^[A-Z]:\\.+/);
+                const isWindowsDriveSubdir = process.platform === "win32" && currentPath.match(/^[A-Z]:\\.+/);
                 
                 if (!isWindowsDriveSubdir) {
                     console.warn(`Attempt to browse outside allowed paths: ${currentPath}`);
                     return res
                         .status(403)
-                        .json({ code: 403, data: null, err: "Access denied: Cannot browse outside allowed directories." });
+                        .json({
+                            code: 403,
+                            data: null,
+                            err: "Access denied: Cannot browse outside allowed directories.",
+                        });
                 }
             }
 
@@ -302,7 +319,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
                 .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
 
             // Add a way to go "up" one directory, but not above drive root on Windows
-            const isAtDriveRoot = process.platform === 'win32' && currentPath.match(/^[A-Z]:\\?$/);
+            const isAtDriveRoot = process.platform === "win32" && currentPath.match(/^[A-Z]:\\?$/);
             const isAtHomeRoot = path.resolve(currentPath) === path.resolve(homeDir);
             
             if (!isAtHomeRoot && !isAtDriveRoot) {

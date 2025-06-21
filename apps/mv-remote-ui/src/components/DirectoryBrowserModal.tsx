@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import * as ApiTypes from "../../../mv-player/src/shared-api-types";
-import { browseDirectories, listDrives } from "../services/api";
+import { browseDirectories, listDrives, getOsInfo } from "../services/api";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -30,6 +30,7 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
     const [loadingItemPath, setLoadingItemPath] = useState<string | null>(null); // For item-specific loading
     const [error, setError] = useState<string | null>(null);
     const [showDrives, setShowDrives] = useState(false); // Whether to show drives or directories
+    const [isWindows, setIsWindows] = useState<boolean | null>(null);
     const { t } = useTranslation();
 
     const fetchDrives = useCallback(async () => {
@@ -70,12 +71,29 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
 
     useEffect(() => {
         if (isOpen) {
-            if (initialPath) {
-                fetchPathContents(initialPath); // Load initial path when modal opens
-                setShowDrives(false);
-            } else {
-                fetchDrives(); // Load drives when no initial path
-            }
+            setIsLoading(true);
+            getOsInfo()
+                .then(osInfo => {
+                    setIsWindows(osInfo.isWindows);
+                    if (initialPath) {
+                        fetchPathContents(initialPath);
+                        setShowDrives(false);
+                    } else if (osInfo.isWindows) {
+                        fetchDrives(); // Load drives for Windows
+                    } else {
+                        fetchPathContents(undefined); // Load home dir for non-Windows
+                        setShowDrives(false);
+                    }
+                })
+                .catch((err: any) => {
+                    console.error("Failed to get OS info:", err);
+                    setError(err.message || t("dir_browser.error_os"));
+                    setIsWindows(false); // Fallback assumption
+                })
+                .finally(() => {
+                    // This top-level loading state might be handled within each fetch function instead
+                    // For now, let's keep it simple. The individual fetch functions will set it to false.
+                });
         } else {
             // Reset state when modal is closed
             setCurrentPath("");
@@ -84,8 +102,9 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
             setError(null);
             setIsLoading(false);
             setShowDrives(false);
+            setIsWindows(null);
         }
-    }, [isOpen, initialPath, fetchPathContents, fetchDrives]);
+    }, [isOpen, initialPath, fetchPathContents, fetchDrives, t]);
 
     const handleDriveClick = (drive: ApiTypes.DriveEntry) => {
         if (loadingItemPath === drive.path) return; // Prevent re-click if already loading this item
@@ -121,7 +140,7 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                 </DialogHeader>
 
                 {/* Drive/Path Navigation */}
-                {!showDrives && (
+                {isWindows && !showDrives && (
                     <div className="flex gap-2">
                         <Button
                             variant="outline"

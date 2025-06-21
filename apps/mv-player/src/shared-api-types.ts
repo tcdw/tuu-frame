@@ -149,3 +149,9 @@ export interface PlayerControlSuccessData {
     message: string;
 }
 export type PlayerControlResponse = ApiResponse<PlayerControlSuccessData>;
+
+// --- /api/os-info ---
+export interface OsInfoData {
+    isWindows: boolean;
+}
+export type OsInfoResponse = ApiResponse<OsInfoData>;

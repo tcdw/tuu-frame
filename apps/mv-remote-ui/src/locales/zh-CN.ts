@@ -96,12 +96,14 @@ const zhHansCN: LocaleKeys = {
     "dir_browser.loading": "加载中...",
     "dir_browser.error": "错误",
     "dir_browser.error_failed": "加载目录内容失败。",
-    "dir_browser.empty": "未找到子文件夹。",
+    "dir_browser.error_os": "获取操作系统信息失败。",
+    "dir_browser.empty": "该目录为空。",
     "dir_browser.cancel": "取消",
     "dir_browser.select": "选择当前路径",
     "dir_browser.drives": "磁盘",
-    "dir_browser.back_to_drives": "返回磁盘",
-    "dir_browser.no_drives": "未找到磁盘。",
+    "dir_browser.back_to_drives": "返回磁盘列表",
+    "dir_browser.no_drives": "未找到磁盘驱动器。",
+    "dir_browser.refresh": "刷新",
 };
 
 export default zhHansCN;

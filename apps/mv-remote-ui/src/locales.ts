@@ -95,10 +95,12 @@ export interface LocaleKeys {
     "dir_browser.loading": string;
     "dir_browser.error": string;
     "dir_browser.error_failed": string;
+    "dir_browser.error_os": string;
     "dir_browser.empty": string;
     "dir_browser.cancel": string;
     "dir_browser.select": string;
     "dir_browser.drives": string;
     "dir_browser.back_to_drives": string;
     "dir_browser.no_drives": string;
+    "dir_browser.refresh": string;
 }

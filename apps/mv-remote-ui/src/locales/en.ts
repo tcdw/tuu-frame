@@ -93,16 +93,18 @@ const en: LocaleKeys = {
     // dir_browser.*
     "dir_browser.title": "Browse for Folder",
     "dir_browser.desc": "Select a folder to use as a preset path.",
-    "dir_browser.current_path": " Current path:",
+    "dir_browser.current_path": "Current:",
     "dir_browser.loading": "Loading...",
     "dir_browser.error": "Error",
     "dir_browser.error_failed": "Failed to load directory contents.",
-    "dir_browser.empty": "No sub-directories found.",
+    "dir_browser.empty": "This directory is empty.",
     "dir_browser.cancel": "Cancel",
     "dir_browser.select": "Select Current Path",
     "dir_browser.drives": "Drives",
     "dir_browser.back_to_drives": "Back to Drives",
     "dir_browser.no_drives": "No drives found.",
+    "dir_browser.error_os": "Failed to determine operating system.",
+    "dir_browser.refresh": "Refresh",
 };
 
 export default en;

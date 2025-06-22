@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ApiTypes from "../../../mv-player/src/shared-api-types";
 import { browseDirectories, listDrives, getOsInfo } from "../services/api";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
     DialogClose,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Folder, ArrowUpCircle, Loader2, AlertCircle, CheckCircle, HardDrive } from "lucide-react";
+import { Folder, ArrowUpCircle, Loader2, AlertCircle, CheckCircle, HardDrive, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface DirectoryBrowserModalProps {
@@ -25,6 +25,7 @@ interface DirectoryBrowserModalProps {
 
 export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPath }: DirectoryBrowserModalProps) {
     const { t } = useTranslation();
+    const queryClient = useQueryClient();
 
     // `browseTarget` determines what to fetch and display.
     // `null` = closed/initializing, 'drives' = drive list, string = directory path, `undefined` = home directory.
@@ -74,7 +75,8 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
     });
 
     // Consolidate loading and error states from all relevant queries.
-    const isFetchingData = osInfoQuery.isLoading || drivesQuery.isFetching || directoriesQuery.isFetching;
+    const isContentFetching = drivesQuery.isFetching || directoriesQuery.isFetching;
+    const isInitiallyLoading = osInfoQuery.isLoading || (isContentFetching && !loadingItemPath);
     const overallError = osInfoQuery.error || drivesQuery.error || directoriesQuery.error;
 
     // Derived state from queries
@@ -84,10 +86,10 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
 
     // When a fetch completes, clear the item-specific loading indicator.
     useEffect(() => {
-        if (!isFetchingData) {
+        if (!isContentFetching) {
             setLoadingItemPath(null);
         }
-    }, [isFetchingData]);
+    }, [isContentFetching]);
 
     const handleDriveClick = (drive: ApiTypes.DriveEntry) => {
         if (loadingItemPath === drive.path) return;
@@ -112,6 +114,14 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
         setBrowseTarget("drives");
     };
 
+    const handleRefresh = () => {
+        if (showDrives) {
+            queryClient.invalidateQueries({ queryKey: ["drives"] });
+        } else {
+            queryClient.invalidateQueries({ queryKey: ["directories", browseTarget] });
+        }
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[625px]">
@@ -130,14 +140,24 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                     </DialogDescription>
                 </DialogHeader>
 
-                {isWindows && !showDrives && currentPath && (
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={handleBackToDrives}>
-                            <HardDrive className="mr-2 h-4 w-4" />
-                            {t("dir_browser.back_to_drives")}
-                        </Button>
+                <div className="flex items-center justify-between gap-2 my-2">
+                    <div>
+                        {isWindows && !showDrives && currentPath && (
+                            <Button variant="outline" size="sm" onClick={handleBackToDrives}>
+                                <HardDrive className="mr-2 h-4 w-4" />
+                                {t("dir_browser.back_to_drives")}
+                            </Button>
+                        )}
                     </div>
-                )}
+                    <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isContentFetching}>
+                        {isContentFetching ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                        )}
+                        {t("dir_browser.refresh")}
+                    </Button>
+                </div>
 
                 {overallError && (
                     <Alert variant="destructive" className="my-4">
@@ -151,7 +171,7 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
 
                 <div className="h-[300px] w-full min-w-0 rounded-md border p-3 my-2 overflow-y-scroll">
                     {(() => {
-                        if (isFetchingData && !loadingItemPath) {
+                        if (isInitiallyLoading) {
                             return (
                                 <div className="flex items-center justify-center h-full">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -246,7 +266,7 @@ export function DirectoryBrowserModal({ isOpen, onClose, onSelectPath, initialPa
                     <Button
                         type="button"
                         onClick={handleSelectCurrentPath}
-                        disabled={isFetchingData || !currentPath || showDrives}
+                        disabled={isInitiallyLoading || !currentPath || showDrives}
                     >
                         <CheckCircle className="mr-2 h-4 w-4" />
                         {t("dir_browser.select")}

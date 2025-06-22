@@ -94,12 +94,14 @@ const zhTW: LocaleKeys = {
     "dir_browser.loading": "載入中……",
     "dir_browser.error": "錯誤",
     "dir_browser.error_failed": "載入目錄內容失敗。",
-    "dir_browser.empty": "未找到子資料夾。",
+    "dir_browser.error_os": "獲取作業系統資訊失敗。",
+    "dir_browser.empty": "此目錄為空。",
     "dir_browser.cancel": "取消",
     "dir_browser.select": "選擇目前路徑",
-    "dir_browser.drives": "磁碟",
-    "dir_browser.back_to_drives": "返回磁碟",
-    "dir_browser.no_drives": "未找到磁碟。",
+    "dir_browser.drives": "磁碟機",
+    "dir_browser.back_to_drives": "返回磁碟機列表",
+    "dir_browser.no_drives": "找不到磁碟機。",
+    "dir_browser.refresh": "重新整理",
 };
 
 export default zhTW;

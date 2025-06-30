@@ -4,6 +4,7 @@ import { IconDashboard, IconListDetails, IconKey } from "@tabler/icons-react";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
+import { useAuthStore } from "@/auth";
 import {
     Sidebar,
     SidebarContent,
@@ -16,16 +17,17 @@ import {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { t } = useTranslation();
+    const username = useAuthStore(state => state.username);
 
     const NAV_ITEMS = [
         { label: t("nav.dashboard"), icon: IconDashboard, to: "/app/dashboard", group: t("nav.group_navigation") },
         { label: t("nav.monitor"), icon: IconListDetails, to: "/app/monitor", group: t("nav.group_navigation") },
-        {
+        /*{
             label: t("nav.change_password"),
             icon: IconKey,
             to: "/app/settings/change-password",
             group: t("nav.group_settings"),
-        },
+        },*/
     ];
 
     // 按 group 分类
@@ -41,9 +43,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }));
 
     const user = {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
+        name: username || "用户",
+        email: "", // 暂时为空，按用户要求
+        avatar: "", // 暂时为空，按用户要求
     };
 
     return (

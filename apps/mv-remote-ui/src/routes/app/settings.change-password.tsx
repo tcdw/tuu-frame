@@ -57,16 +57,7 @@ function ChangePasswordComponent() {
     };
 
     return (
-        <div className="container mx-auto py-8 flex flex-col items-center">
-            <div className="w-full max-w-md mb-6">
-                <Link
-                    to="/app/dashboard"
-                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"
-                >
-                    <ArrowLeft />
-                    {t("change_password.back")}
-                </Link>
-            </div>
+        <div className="flex flex-col items-center">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle className="flex items-center text-2xl">

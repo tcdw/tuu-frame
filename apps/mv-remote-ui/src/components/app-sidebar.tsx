@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { IconDashboard, IconListDetails, IconKey } from "@tabler/icons-react";
+import { IconDashboard, IconListDetails } from "@tabler/icons-react";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";

@@ -82,13 +82,7 @@ function MonitorComponent() {
     };
 
     return (
-        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-            <div className="mb-6">
-                <Button variant="outline" onClick={() => navigate({ to: "/app/dashboard" })}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    {t("monitor.back")}
-                </Button>
-            </div>
+        <div className="w-full">
             <Card className="w-full max-w-3xl mx-auto">
                 <CardHeader className="flex justify-between items-center">
                     <div>

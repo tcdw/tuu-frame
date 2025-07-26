@@ -1,0 +1,17 @@
+{
+  "name": "@mtv/shared-api-types",
+  "version": "1.0.0",
+  "description": "Shared API types for MTV applications",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

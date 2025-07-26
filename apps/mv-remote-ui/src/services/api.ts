@@ -1,4 +1,4 @@
-import * as ApiTypes from "../../../mv-player/src/shared-api-types";
+import * as ApiTypes from "@mtv/shared-api-types";
 import { apiClient } from "../utils/request";
 import HmacSHA512 from "crypto-js/hmac-sha512";
 

@@ -291,20 +291,18 @@ export function createServer(win: BrowserWindow): Promise<void> {
             const homeDir = app.getPath("home");
             const isHomeOrSubdir = path.resolve(currentPath).startsWith(path.resolve(homeDir));
             const isWindowsDriveRoot = process.platform === "win32" && currentPath.match(/^[A-Z]:\\?$/);
-            
+
             if (!isHomeOrSubdir && !isWindowsDriveRoot) {
                 // Check if it's a subdirectory of a Windows drive
                 const isWindowsDriveSubdir = process.platform === "win32" && currentPath.match(/^[A-Z]:\\.+/);
-                
+
                 if (!isWindowsDriveSubdir) {
                     console.warn(`Attempt to browse outside allowed paths: ${currentPath}`);
-                    return res
-                        .status(403)
-                        .json({
-                            code: 403,
-                            data: null,
-                            err: "Access denied: Cannot browse outside allowed directories.",
-                        });
+                    return res.status(403).json({
+                        code: 403,
+                        data: null,
+                        err: "Access denied: Cannot browse outside allowed directories.",
+                    });
                 }
             }
 
@@ -321,7 +319,7 @@ export function createServer(win: BrowserWindow): Promise<void> {
             // Add a way to go "up" one directory, but not above drive root on Windows
             const isAtDriveRoot = process.platform === "win32" && currentPath.match(/^[A-Z]:\\?$/);
             const isAtHomeRoot = path.resolve(currentPath) === path.resolve(homeDir);
-            
+
             if (!isAtHomeRoot && !isAtDriveRoot) {
                 directoryEntries.unshift({
                     name: ".. (Up)",

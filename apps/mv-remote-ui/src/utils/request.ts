@@ -1,5 +1,5 @@
 import axios, { AxiosError, type AxiosResponse } from "axios";
-import type { ApiResponse } from "../../../mv-player/src/shared-api-types";
+import type { ApiResponse } from "@mtv/shared-api-types";
 
 // export const API_BASE_URL = process.env.NODE_ENV === "development" ? "http://localhost:15678/api" : "/api";
 export const API_BASE_URL = "/api";

@@ -142,64 +142,89 @@ export async function scanDirectoryForVideos(directoryPath: string): Promise<str
 // Get available drives on Windows
 export async function getAvailableDrives(): Promise<{ name: string; path: string; label?: string }[]> {
     const { platform } = process;
-    
-    if (platform !== 'win32') {
+
+    if (platform !== "win32") {
         // On non-Windows platforms, return empty array or mount points
         return [];
     }
-    
+
     try {
         // Use Node.js child_process to execute 'wmic' command to get drive information
-        const { exec } = await import('node:child_process');
-        const { promisify } = await import('node:util');
+        const { exec } = await import("node:child_process");
+        const { promisify } = await import("node:util");
         const execAsync = promisify(exec);
-        
+
         // Get drive letters and labels using wmic
-        const { stdout } = await execAsync('wmic logicaldisk get deviceid,volumename /format:csv');
-        
+        const { stdout } = await execAsync("wmic logicaldisk get deviceid,volumename /format:csv");
+
         const drives: { name: string; path: string; label?: string }[] = [];
-        const lines = stdout.trim().split('\n');
-        
+        const lines = stdout.trim().split("\n");
+
         // Skip header line and process each drive
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
             if (line) {
-                const parts = line.split(',');
+                const parts = line.split(",");
                 if (parts.length >= 2) {
                     const deviceId = parts[1]?.trim();
                     const volumeName = parts[2]?.trim();
-                    
+
                     if (deviceId && deviceId.match(/^[A-Z]:$/)) {
                         drives.push({
                             name: deviceId,
                             path: `${deviceId}\\`,
-                            label: volumeName || undefined
+                            label: volumeName || undefined,
                         });
                     }
                 }
             }
         }
-        
+
         return drives;
     } catch (error) {
-        console.error('Error getting available drives:', error);
+        console.error("Error getting available drives:", error);
         // Fallback: try to list common drive letters
-        const commonDrives = ['C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:', 'N:', 'O:', 'P:', 'Q:', 'R:', 'S:', 'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:'];
+        const commonDrives = [
+            "C:",
+            "D:",
+            "E:",
+            "F:",
+            "G:",
+            "H:",
+            "I:",
+            "J:",
+            "K:",
+            "L:",
+            "M:",
+            "N:",
+            "O:",
+            "P:",
+            "Q:",
+            "R:",
+            "S:",
+            "T:",
+            "U:",
+            "V:",
+            "W:",
+            "X:",
+            "Y:",
+            "Z:",
+        ];
         const availableDrives: { name: string; path: string; label?: string }[] = [];
-        
+
         for (const drive of commonDrives) {
             try {
                 await fs.access(`${drive}\\`);
                 availableDrives.push({
                     name: drive,
                     path: `${drive}\\`,
-                    label: undefined
+                    label: undefined,
                 });
             } catch {
                 // Drive not accessible, skip
             }
         }
-        
+
         return availableDrives;
     }
 }

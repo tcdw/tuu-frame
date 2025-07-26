@@ -99,10 +99,11 @@ export async function initializeCredentials(userDataPath: string): Promise<void>
         );
         // Get the public salt (it will be created if it doesn't exist)
         const publicSalt = await getPublicSalt(userDataPath);
-        
+
         // Simulate client-side hashing for the default password
         const defaultPassword = "admin";
-        const clientHashedDefaultPassword = crypto.createHmac("sha512", publicSalt)
+        const clientHashedDefaultPassword = crypto
+            .createHmac("sha512", publicSalt)
             .update(defaultPassword)
             .digest("hex");
 
@@ -145,7 +146,7 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     const authHeader = req.headers["authorization"];
     let token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
 
-    if (!token && req.query && typeof req.query.token === 'string') {
+    if (!token && req.query && typeof req.query.token === "string") {
         token = req.query.token;
     }
 

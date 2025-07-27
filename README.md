@@ -64,8 +64,8 @@
 
 ```bash
 # 克隆项目（monorepo 结构）
-git clone https://github.com/tcdbox/tuuframe.git
-cd tuuframe
+git clone https://github.com/tcdw/tuu-frame.git
+cd tuu-frame
 
 # 安装依赖
 pnpm install

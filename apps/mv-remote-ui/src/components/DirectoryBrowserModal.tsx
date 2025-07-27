@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import * as ApiTypes from "../../../mv-player/src/shared-api-types";
+import * as ApiTypes from "@mtv/shared-api-types";
 import { browseDirectories, listDrives, getOsInfo } from "../services/api";
 import { Button } from "@/components/ui/button";
 import {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuthStore } from "../../auth";
 import { getPresets, addPreset, deletePreset, setActiveDirectory } from "../../services/api";
-import * as ApiTypes from "../../../../mv-player/src/shared-api-types";
+import * as ApiTypes from "@mtv/shared-api-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

@@ -1,7 +1,7 @@
 import express, { Request, Response, RequestHandler } from "express";
 import { fileURLToPath } from "node:url";
 import cors from "cors";
-import * as ApiTypes from "../src/shared-api-types.ts";
+import * as ApiTypes from "@mtv/shared-api-types";
 import { loadPresets, savePresets, scanDirectoryForVideos, getAvailableDrives } from "./functions.ts";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";

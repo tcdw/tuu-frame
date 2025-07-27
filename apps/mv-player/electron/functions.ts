@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { app } from "electron";
 // import { randomUUID } from 'node:crypto'; // Might be needed for future migrations
-import type { PresetItem } from "../src/shared-api-types";
+import type { PresetItem } from "@mtv/shared-api-types";
 
 const CURRENT_DATA_VERSION = 1;
 

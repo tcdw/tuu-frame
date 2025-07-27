@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as api from "./services/api";
-import type { LoginRequest, ChangeCredentialsRequest } from "../../mv-player/src/shared-api-types";
+import type { LoginRequest, ChangeCredentialsRequest } from "@mtv/shared-api-types";
 
 const JWT_STORAGE_KEY = "mv_remote_jwt_token";
 
